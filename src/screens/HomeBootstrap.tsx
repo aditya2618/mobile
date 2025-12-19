@@ -39,7 +39,7 @@ export default function HomeBootstrap({ onReady }: any) {
                         console.log("WebSocket update received:", data);
 
                         // Handle different message types
-                        if (data.type === "entity_update" && data.entity_id && data.state) {
+                        if (data.type === "entity_state" && data.entity_id && data.state) {
                             updateEntityState(data.entity_id, data.state);
                         }
                     });

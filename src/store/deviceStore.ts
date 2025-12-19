@@ -1,11 +1,12 @@
 import { create } from "zustand";
-import { api } from "../api/client";
+import { api, controlEntity as apiControlEntity } from "../api/client";
 import { Device } from "../types/models";
 
 interface DeviceState {
     devices: Device[];
     loadDevices: (homeId: number) => Promise<void>;
     updateEntityState: (entityId: number, state: any) => void;
+    controlEntity: (entityId: number, command: any) => Promise<void>;
 }
 
 export const useDeviceStore = create<DeviceState>((set) => ({
@@ -25,4 +26,14 @@ export const useDeviceStore = create<DeviceState>((set) => ({
                 ),
             })),
         })),
+
+    controlEntity: async (entityId, command) => {
+        try {
+            await apiControlEntity(entityId, command);
+            // State will update via WebSocket
+        } catch (error) {
+            console.error('Control failed:', error);
+            throw error;
+        }
+    },
 }));

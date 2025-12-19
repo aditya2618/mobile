@@ -5,13 +5,24 @@ class WebSocketClient {
     private maxReconnectAttempts = 5;
     private reconnectDelay = 3000;
     private onMessageCallback?: (data: any) => void;
+    private reconnectTimeout?: NodeJS.Timeout;
+    private isConnecting = false;
+    private shouldReconnect = true;
 
     constructor(url: string) {
         this.url = url;
     }
 
     connect(token: string, homeId: number, onMessage: (data: any) => void) {
+        // Prevent duplicate connections
+        if (this.isConnecting || (this.ws && this.ws.readyState === WebSocket.OPEN)) {
+            console.log("WebSocket already connected or connecting");
+            return;
+        }
+
         this.onMessageCallback = onMessage;
+        this.shouldReconnect = true;
+        this.isConnecting = true;
 
         // WebSocket URL format: ws://IP:8000/ws/home/{home_id}/
         const wsUrl = `${this.url}/home/${homeId}/?token=${token}`;
@@ -23,6 +34,7 @@ class WebSocketClient {
         this.ws.onopen = () => {
             console.log("WebSocket connected");
             this.reconnectAttempts = 0;
+            this.isConnecting = false;
         };
 
         this.ws.onmessage = (event) => {
@@ -39,21 +51,31 @@ class WebSocketClient {
 
         this.ws.onerror = (error) => {
             console.error("WebSocket error:", error);
+            this.isConnecting = false;
         };
 
         this.ws.onclose = () => {
             console.log("WebSocket closed");
-            this.attemptReconnect(token, homeId);
+            this.isConnecting = false;
+
+            if (this.shouldReconnect) {
+                this.attemptReconnect(token, homeId);
+            }
         };
     }
 
     private attemptReconnect(token: string, homeId: number) {
+        // Clear any existing reconnect timeout
+        if (this.reconnectTimeout) {
+            clearTimeout(this.reconnectTimeout);
+        }
+
         if (this.reconnectAttempts < this.maxReconnectAttempts) {
             this.reconnectAttempts++;
-            console.log(`Reconnecting... Attempt ${this.reconnectAttempts}`);
+            console.log(`Reconnecting... Attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts}`);
 
-            setTimeout(() => {
-                if (this.onMessageCallback) {
+            this.reconnectTimeout = setTimeout(() => {
+                if (this.onMessageCallback && this.shouldReconnect) {
                     this.connect(token, homeId, this.onMessageCallback);
                 }
             }, this.reconnectDelay);
@@ -63,10 +85,18 @@ class WebSocketClient {
     }
 
     disconnect() {
+        this.shouldReconnect = false;
+
+        if (this.reconnectTimeout) {
+            clearTimeout(this.reconnectTimeout);
+        }
+
         if (this.ws) {
             this.ws.close();
             this.ws = null;
         }
+
+        this.isConnecting = false;
     }
 
     send(data: any) {
@@ -77,4 +107,4 @@ class WebSocketClient {
 }
 
 // Create a singleton instance
-export const wsClient = new WebSocketClient("ws://10.113.86.170:8000/ws");
+export const wsClient = new WebSocketClient("ws://192.168.29.91:8000/ws");

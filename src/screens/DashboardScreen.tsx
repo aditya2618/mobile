@@ -1,21 +1,58 @@
 import { View, ScrollView, StyleSheet, RefreshControl } from "react-native";
-import { Text, Card, Chip, IconButton } from "react-native-paper";
+import { Text, Card, Chip, IconButton, Switch } from "react-native-paper";
 import { LinearGradient } from "expo-linear-gradient";
 import { useState } from "react";
 import { useDeviceStore } from "../store/deviceStore";
 import { useHomeStore } from "../store/homeStore";
+import * as Haptics from "expo-haptics";
 
 export default function DashboardScreen() {
     const devices = useDeviceStore((s) => s.devices);
     const activeHome = useHomeStore((s) => s.activeHome);
     const loadDevices = useDeviceStore((s) => s.loadDevices);
+    const controlEntity = useDeviceStore((s) => s.controlEntity);
     const [refreshing, setRefreshing] = useState(false);
+    const [controlling, setControlling] = useState<number | null>(null);
 
     const onRefresh = async () => {
         if (activeHome) {
             setRefreshing(true);
             await loadDevices(activeHome.id);
             setRefreshing(false);
+        }
+    };
+
+    const formatEntityState = (entity: any) => {
+        if (typeof entity.state === 'object' && entity.state !== null) {
+            // Extract value from state object
+            if ('value' in entity.state) {
+                return entity.state.value;
+            }
+            // For complex states like RGB lights
+            if ('state' in entity.state) {
+                return entity.state.state; // ON/OFF
+            }
+            // Fallback to first value
+            const firstValue = Object.values(entity.state)[0];
+            return firstValue;
+        }
+        return entity.state;
+    };
+
+    const handleToggle = async (entity: any) => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        setControlling(entity.id);
+        try {
+            // Determine current state
+            const currentState = formatEntityState(entity);
+            const newState = currentState === 'ON' ? 'OFF' : 'ON';
+
+            // Send simple string command for basic switches
+            await controlEntity(entity.id, newState);
+        } catch (error) {
+            console.error('Control error:', error);
+        } finally {
+            setControlling(null);
         }
     };
 
@@ -30,6 +67,13 @@ export default function DashboardScreen() {
             motion: "motion-sensor",
         };
         return icons[type] || "home-automation";
+    };
+
+    const getStateColor = (entity: any) => {
+        const state = formatEntityState(entity);
+        if (state === 'ON' || state === true) return '#FFC107'; // Amber for ON
+        if (state === 'OFF' || state === false) return '#666'; // Gray for OFF
+        return '#4CAF50'; // Green for sensors
     };
 
     return (
@@ -157,36 +201,52 @@ export default function DashboardScreen() {
                                 {/* Entities */}
                                 {device.entities.length > 0 && (
                                     <View style={styles.entitiesContainer}>
-                                        {device.entities.map((entity) => (
-                                            <View key={entity.id} style={styles.entityRow}>
-                                                <IconButton
-                                                    icon={getEntityIcon(entity.entity_type)}
-                                                    size={20}
-                                                    iconColor="#4CAF50"
-                                                />
-                                                <View style={styles.entityInfo}>
-                                                    <Text variant="bodyMedium" style={styles.entityName}>
-                                                        {entity.name}
-                                                    </Text>
-                                                    <Text
-                                                        variant="bodySmall"
-                                                        style={styles.entityState}
-                                                    >
-                                                        {typeof entity.state === "object"
-                                                            ? JSON.stringify(entity.state)
-                                                            : entity.state}{" "}
-                                                        {entity.unit || ""}
-                                                    </Text>
-                                                </View>
-                                                {entity.is_controllable && (
+                                        {device.entities.map((entity) => {
+                                            const isSwitch = ['light', 'switch', 'fan'].includes(entity.entity_type);
+                                            const currentState = formatEntityState(entity);
+                                            const isOn = currentState === 'ON' || currentState === true;
+
+                                            return (
+                                                <View key={entity.id} style={styles.entityRow}>
                                                     <IconButton
-                                                        icon="chevron-right"
+                                                        icon={getEntityIcon(entity.entity_type)}
                                                         size={20}
-                                                        iconColor="#666"
+                                                        iconColor={isOn && isSwitch ? '#FFC107' : getStateColor(entity)}
                                                     />
-                                                )}
-                                            </View>
-                                        ))}
+                                                    <View style={styles.entityInfo}>
+                                                        <Text variant="bodyMedium" style={styles.entityName}>
+                                                            {entity.name}
+                                                        </Text>
+                                                        <Text variant="bodySmall" style={styles.entityState}>
+                                                            {isSwitch ? (isOn ? 'ON' : 'OFF') : (
+                                                                <>
+                                                                    {formatEntityState(entity)}
+                                                                    {entity.unit ? ` ${entity.unit}` : ''}
+                                                                </>
+                                                            )}
+                                                        </Text>
+                                                    </View>
+
+                                                    {/* Control Button */}
+                                                    {entity.is_controllable && isSwitch ? (
+                                                        <Switch
+                                                            value={isOn}
+                                                            onValueChange={() => handleToggle(entity)}
+                                                            disabled={controlling === entity.id || !device.is_online}
+                                                            color="#4CAF50"
+                                                        />
+                                                    ) : entity.is_controllable ? (
+                                                        <IconButton
+                                                            icon="tune"
+                                                            size={20}
+                                                            iconColor="#4CAF50"
+                                                            onPress={() => console.log('Advanced control - TODO')}
+                                                            disabled={!device.is_online}
+                                                        />
+                                                    ) : null}
+                                                </View>
+                                            );
+                                        })}
                                     </View>
                                 )}
                             </Card.Content>
