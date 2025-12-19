@@ -54,8 +54,11 @@ class WebSocketClient {
             this.isConnecting = false;
         };
 
-        this.ws.onclose = () => {
+        this.ws.onclose = (event) => {
             console.log("WebSocket closed");
+            console.log("Close code:", event.code);
+            console.log("Close reason:", event.reason);
+            console.log("Was clean:", event.wasClean);
             this.isConnecting = false;
 
             if (this.shouldReconnect) {
@@ -107,4 +110,4 @@ class WebSocketClient {
 }
 
 // Create a singleton instance
-export const wsClient = new WebSocketClient("ws://192.168.29.91:8000/ws");
+export const wsClient = new WebSocketClient("ws://10.113.86.170:8000/ws");

@@ -27,3 +27,10 @@ export interface Home {
     name: string;
     role: "owner" | "family" | "guest";
 }
+
+export interface Scene {
+    id: number;
+    name: string;
+    icon?: string;
+    enabled: boolean;
+}
