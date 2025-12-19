@@ -1,6 +1,7 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { View, Text, StyleSheet } from "react-native";
 import { Icon } from "react-native-paper";
+import HomeScreen from "../screens/HomeScreen";
 import DashboardScreen from "../screens/DashboardScreen";
 import ScenesScreen from "../screens/ScenesScreen";
 import SettingsScreen from "../screens/SettingsScreen";
@@ -30,10 +31,19 @@ export default function AppTabs() {
         >
             <Tab.Screen
                 name="Home"
-                component={DashboardScreen}
+                component={HomeScreen}
                 options={{
                     tabBarIcon: ({ color, size }) => (
                         <Icon source="home" size={size} color={color} />
+                    ),
+                }}
+            />
+            <Tab.Screen
+                name="Devices"
+                component={DashboardScreen}
+                options={{
+                    tabBarIcon: ({ color, size }) => (
+                        <Icon source="devices" size={size} color={color} />
                     ),
                 }}
             />
@@ -46,16 +56,6 @@ export default function AppTabs() {
                     ),
                 }}
             />
-            <Tab.Screen
-                name="Voice"
-                options={{
-                    tabBarIcon: ({ color, size }) => (
-                        <Icon source="microphone" size={size} color={color} />
-                    ),
-                }}
-            >
-                {() => <Placeholder title="Voice Control" />}
-            </Tab.Screen>
             <Tab.Screen
                 name="Settings"
                 component={SettingsScreen}

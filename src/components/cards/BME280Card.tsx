@@ -19,40 +19,51 @@ export default function BME280Card({ entity, device }: BME280CardProps) {
     return (
         <BaseCard
             icon="gauge"
-            iconColor={theme.info}
+            iconColor={device.is_online ? theme.info : theme.textDisabled}
             title={entity.name.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
             subtitle={device.name}
             lastUpdated={entity.last_updated}
             status={device.is_online ? 'online' : 'offline'}
         >
-            <View style={styles.grid}>
-                <View style={styles.reading}>
-                    <Text variant="titleMedium" style={{ color: theme.warning }}>
-                        {typeof temperature === 'number' ? temperature.toFixed(1) : temperature}
-                    </Text>
-                    <Text variant="bodySmall" style={{ color: theme.textSecondary }}>
-                        Temperature (°C)
-                    </Text>
-                </View>
+            {device.is_online ? (
+                <View style={styles.grid}>
+                    <View style={styles.reading}>
+                        <Text variant="titleMedium" style={{ color: theme.warning }}>
+                            {typeof temperature === 'number' ? temperature.toFixed(1) : temperature}
+                        </Text>
+                        <Text variant="bodySmall" style={{ color: theme.textSecondary }}>
+                            Temperature (°C)
+                        </Text>
+                    </View>
 
-                <View style={styles.reading}>
-                    <Text variant="titleMedium" style={{ color: theme.info }}>
-                        {typeof humidity === 'number' ? humidity.toFixed(1) : humidity}
-                    </Text>
-                    <Text variant="bodySmall" style={{ color: theme.textSecondary }}>
-                        Humidity (%)
-                    </Text>
-                </View>
+                    <View style={styles.reading}>
+                        <Text variant="titleMedium" style={{ color: theme.info }}>
+                            {typeof humidity === 'number' ? humidity.toFixed(1) : humidity}
+                        </Text>
+                        <Text variant="bodySmall" style={{ color: theme.textSecondary }}>
+                            Humidity (%)
+                        </Text>
+                    </View>
 
-                <View style={styles.reading}>
-                    <Text variant="titleMedium" style={{ color: theme.primary }}>
-                        {typeof pressure === 'number' ? pressure.toFixed(0) : pressure}
+                    <View style={styles.reading}>
+                        <Text variant="titleMedium" style={{ color: theme.primary }}>
+                            {typeof pressure === 'number' ? pressure.toFixed(0) : pressure}
+                        </Text>
+                        <Text variant="bodySmall" style={{ color: theme.textSecondary }}>
+                            Pressure (hPa)
+                        </Text>
+                    </View>
+                </View>
+            ) : (
+                <View style={styles.offlineContainer}>
+                    <Text variant="bodyLarge" style={{ color: theme.textDisabled }}>
+                        Device Offline
                     </Text>
-                    <Text variant="bodySmall" style={{ color: theme.textSecondary }}>
-                        Pressure (hPa)
+                    <Text variant="bodySmall" style={{ color: theme.textDisabled, marginTop: 4 }}>
+                        No live data available
                     </Text>
                 </View>
-            </View>
+            )}
         </BaseCard>
     );
 }
@@ -65,5 +76,10 @@ const styles = StyleSheet.create({
     reading: {
         alignItems: 'center',
         padding: 8,
+    },
+    offlineContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 20,
     },
 });

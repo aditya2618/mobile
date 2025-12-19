@@ -15,6 +15,7 @@ export default function App() {
   const token = useAuthStore((s) => s.token);
   const activeHome = useHomeStore((s) => s.activeHome);
   const updateEntityState = useDeviceStore((s) => s.updateEntityState);
+  const updateDeviceStatus = useDeviceStore((s) => s.updateDeviceStatus);
   const [ready, setReady] = useState(false);
 
   // Connect to WebSocket when authenticated and home is loaded
@@ -27,6 +28,10 @@ export default function App() {
         // Handle different message types
         if (data.type === "entity_state" && data.entity_id && data.state) {
           updateEntityState(data.entity_id, data.state);
+        } else if (data.type === "device_status" && data.device_id !== undefined) {
+          // Handle device online/offline status updates
+          updateDeviceStatus(data.device_id, data.is_online);
+          console.log(`📡 Device ${data.device_id} is now ${data.is_online ? 'ONLINE ✅' : 'OFFLINE ❌'}`);
         }
       });
 

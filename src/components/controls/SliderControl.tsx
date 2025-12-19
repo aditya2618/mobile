@@ -13,6 +13,7 @@ interface SliderControlProps {
     unit?: string;
     onChange: (value: number) => void;
     disabled?: boolean;
+    color?: string; // Optional color for the slider track
 }
 
 export default function SliderControl({
@@ -24,6 +25,7 @@ export default function SliderControl({
     unit = '%',
     onChange,
     disabled,
+    color,
 }: SliderControlProps) {
     const { theme } = useTheme();
 
@@ -32,13 +34,16 @@ export default function SliderControl({
         onChange(Math.round(newValue));
     };
 
+    // Use custom color if provided, otherwise use theme color
+    const sliderColor = color || theme.primary;
+
     return (
         <View style={styles.container}>
             <View style={styles.header}>
                 <Text variant="bodyMedium" style={{ color: theme.text }}>
                     {label}
                 </Text>
-                <Text variant="titleMedium" style={{ color: theme.primary }}>
+                <Text variant="titleMedium" style={{ color: sliderColor }}>
                     {value}{unit}
                 </Text>
             </View>
@@ -49,9 +54,9 @@ export default function SliderControl({
                 minimumValue={min}
                 maximumValue={max}
                 step={step}
-                minimumTrackTintColor={theme.primary}
+                minimumTrackTintColor={sliderColor}
                 maximumTrackTintColor={theme.border}
-                thumbTintColor={theme.primary}
+                thumbTintColor={sliderColor}
                 disabled={disabled}
             />
         </View>
@@ -73,3 +78,4 @@ const styles = StyleSheet.create({
         height: 40,
     },
 });
+

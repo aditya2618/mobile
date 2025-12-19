@@ -78,20 +78,31 @@ export default function DHTCard({ entity, device }: DHTCardProps) {
     return (
         <BaseCard
             icon={icon}
-            iconColor={color}
+            iconColor={device.is_online ? color : theme.textDisabled}
             title={entity.name.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
             subtitle={device.name}
             lastUpdated={entity.last_updated}
             status={device.is_online ? 'online' : 'offline'}
         >
-            <View style={styles.singleReading}>
-                <Text variant="displaySmall" style={{ color, fontWeight: 'bold' }}>
-                    {typeof value === 'number' ? value.toFixed(1) : value}
-                </Text>
-                <Text variant="titleMedium" style={{ color: theme.textSecondary, marginLeft: 8 }}>
-                    {displayUnit}
-                </Text>
-            </View>
+            {device.is_online ? (
+                <View style={styles.singleReading}>
+                    <Text variant="displaySmall" style={{ color, fontWeight: 'bold' }}>
+                        {typeof value === 'number' ? value.toFixed(1) : value}
+                    </Text>
+                    <Text variant="titleMedium" style={{ color: theme.textSecondary, marginLeft: 8 }}>
+                        {displayUnit}
+                    </Text>
+                </View>
+            ) : (
+                <View style={styles.offlineContainer}>
+                    <Text variant="bodyLarge" style={{ color: theme.textDisabled }}>
+                        Device Offline
+                    </Text>
+                    <Text variant="bodySmall" style={{ color: theme.textDisabled, marginTop: 4 }}>
+                        No live data available
+                    </Text>
+                </View>
+            )}
         </BaseCard>
     );
 }
@@ -121,5 +132,10 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'baseline',
         marginVertical: 16,
+    },
+    offlineContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 20,
     },
 });

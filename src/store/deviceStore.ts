@@ -6,6 +6,7 @@ interface DeviceState {
     devices: Device[];
     loadDevices: (homeId: number) => Promise<void>;
     updateEntityState: (entityId: number, state: any) => void;
+    updateDeviceStatus: (deviceId: number, isOnline: boolean) => void;
     controlEntity: (entityId: number, command: any) => Promise<void>;
 }
 
@@ -29,6 +30,13 @@ export const useDeviceStore = create<DeviceState>((set) => ({
             })),
         })),
 
+    updateDeviceStatus: (deviceId, isOnline) =>
+        set((s) => ({
+            devices: s.devices.map((d) =>
+                d.id === deviceId ? { ...d, is_online: isOnline } : d
+            ),
+        })),
+
     controlEntity: async (entityId, command) => {
         try {
             // Optimistic update - immediately update UI
@@ -38,7 +46,7 @@ export const useDeviceStore = create<DeviceState>((set) => ({
                     ...d,
                     entities: d.entities.map((e) =>
                         e.id === entityId
-                            ? { ...e, state: command }
+                            ? { ...e, state: { ...e.state, ...command } } // Merge instead of replace
                             : e
                     ),
                 })),

@@ -1,6 +1,8 @@
+import { View, Text } from 'react-native';
 import BaseCard from './BaseCard';
 import PowerToggle from '../controls/PowerToggle';
 import SliderControl from '../controls/SliderControl';
+import ColorPicker from '../controls/ColorPicker';
 
 interface LightCardProps {
     entity: any;
@@ -9,9 +11,25 @@ interface LightCardProps {
 }
 
 export default function LightCard({ entity, device, onControl }: LightCardProps) {
-    const isOn = entity.state?.power || entity.state === 'ON' || entity.state === true;
-    const brightness = entity.state?.brightness ?? 100;
-    const supportsBrightness = entity.capabilities?.supports_brightness;
+    // Improved state detection - handle different state formats
+    const state = entity.state || {};
+    console.log(`🔍 ${entity.name} state:`, JSON.stringify(state));
+    const isOn = state.state === 'ON' || state.power === 'ON' || state.power === true;
+    const brightness = state.brightness ?? 255;
+    const supportsBrightness = entity.capabilities?.brightness;
+
+    // Color support detection - multiple methods for compatibility
+    const capabilities = entity.capabilities || {};
+    const hasColorCapability = capabilities.color === true || capabilities.rgb === true;
+    const hasColorMode = state.color_mode === 'rgb' || state.color_mode === 'rgbw';
+    const hasColorInState = state.color && typeof state.color === 'object';
+
+    const supportsRGB = hasColorCapability || hasColorMode || hasColorInState;
+    const supportsWhite = capabilities.white === true || capabilities.rgbw === true || state.color_mode === 'rgbw';
+    const color = state.color || { r: 255, g: 255, b: 255, w: 255 };
+
+    // Debug log
+    console.log(`💡 Light: ${entity.name}, capabilities:`, capabilities, `state.color_mode: ${state.color_mode}, supportsRGB: ${supportsRGB}, isOn: ${isOn}`);
 
     const handlePowerToggle = (value: boolean) => {
         onControl({ power: value ? 'ON' : 'OFF' });
@@ -19,6 +37,10 @@ export default function LightCard({ entity, device, onControl }: LightCardProps)
 
     const handleBrightness = (value: number) => {
         onControl({ brightness: value });
+    };
+
+    const handleColorChange = (newColor: { r: number; g: number; b: number; w?: number }) => {
+        onControl({ color: newColor });
     };
 
     return (
@@ -42,11 +64,24 @@ export default function LightCard({ entity, device, onControl }: LightCardProps)
                     value={brightness}
                     onChange={handleBrightness}
                     min={0}
-                    max={100}
-                    unit="%"
+                    max={255}
+                    unit=""
                     disabled={!device.is_online}
                 />
             )}
+
+            {/* RGB/RGBW Color Picker - TESTING ALWAYS SHOW */}
+            <View style={{ backgroundColor: '#000000', padding: 10 }}>
+                <Text style={{ color: '#00FF00' }}>
+                    TEST: supportsRGB={String(supportsRGB)}, isOn={String(isOn)}
+                </Text>
+            </View>
+            <ColorPicker
+                color={color}
+                onChange={handleColorChange}
+                disabled={false}
+                supportsWhite={supportsWhite}
+            />
         </BaseCard>
     );
 }
