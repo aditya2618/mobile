@@ -1,20 +1,22 @@
 import { useState, useEffect } from "react";
-import { View, StyleSheet, StatusBar } from "react-native";
+import { View, StyleSheet, StatusBar, ScrollView } from "react-native";
 import { Button, TextInput, Text } from "react-native-paper";
 import { useAuthStore } from "../store/authStore";
 import { useServerConfigStore } from "../store/serverConfigStore";
 import { useTheme } from "../context/ThemeContext";
 import { wsClient } from "../api/websocket";
 
-export default function LoginScreen({ onSwitchToRegister }: { onSwitchToRegister?: () => void }) {
-    const login = useAuthStore((s) => s.login);
+export default function RegisterScreen({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
+    const register = useAuthStore((s) => s.register);
     const { setServerConfig, serverIp: savedIp, serverPort: savedPort, getWebSocketUrl } = useServerConfigStore();
     const { theme, mode } = useTheme();
 
     const [serverIp, setServerIp] = useState(savedIp || "192.168.29.91");
     const [serverPort, setServerPort] = useState(savedPort || "8000");
     const [username, setUsername] = useState("");
+    const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
@@ -24,47 +26,35 @@ export default function LoginScreen({ onSwitchToRegister }: { onSwitchToRegister
         if (savedPort) setServerPort(savedPort);
     }, [savedIp, savedPort]);
 
-    const handleLogin = async () => {
+    const handleRegister = async () => {
         setLoading(true);
         setError("");
 
+        // Validate passwords match
+        if (password !== confirmPassword) {
+            setError("Passwords do not match");
+            setLoading(false);
+            return;
+        }
+
         try {
             // First, save server configuration
-            console.log("=== LOGIN DEBUG START ===");
+            console.log("=== REGISTER DEBUG START ===");
             console.log("Saving server config:", serverIp, serverPort);
             await setServerConfig(serverIp, serverPort);
-
-            // Verify server config was saved
-            const savedBaseUrl = getWebSocketUrl().replace('/ws', '');
-            console.log("Saved base URL:", savedBaseUrl);
 
             // Initialize WebSocket URL
             const wsUrl = getWebSocketUrl();
             wsClient.setUrl(wsUrl);
             console.log("WebSocket URL initialized:", wsUrl);
 
-            // Check what the API client will use
-            const testBaseUrl = useServerConfigStore.getState().getBaseUrl();
-            console.log("API Base URL from store:", testBaseUrl);
-            console.log("Final login URL will be:", testBaseUrl + "/api/auth/login/");
-
-            // Then attempt login
-            console.log("Attempting login with username:", username);
-            await login(username, password);
-            console.log("✅ Login successful!");
+            // Then attempt registration
+            console.log("Attempting registration with username:", username);
+            await register(username, email, password);
+            console.log("✅ Registration successful!");
         } catch (error: any) {
-            console.error("❌ Login failed:", error);
-            console.error("Error details:", {
-                message: error.message,
-                response: error.response?.data,
-                status: error.response?.status,
-                config: {
-                    url: error.config?.url,
-                    baseURL: error.config?.baseURL,
-                    method: error.config?.method
-                }
-            });
-            setError(error.response?.data?.error || error.message || "Login failed. Check your server IP and credentials.");
+            console.error("❌ Registration failed:", error);
+            setError(error.response?.data?.error || error.message || "Registration failed. Please try again.");
         } finally {
             setLoading(false);
         }
@@ -76,14 +66,14 @@ export default function LoginScreen({ onSwitchToRegister }: { onSwitchToRegister
                 barStyle="light-content"
                 backgroundColor="#0f172a"
             />
-            <View style={styles.container}>
+            <ScrollView style={styles.container}>
                 <View style={styles.content}>
                     <View style={styles.header}>
                         <Text variant="displaySmall" style={styles.title}>
-                            🏠 Smart Home
+                            🏠 Create Account
                         </Text>
                         <Text variant="bodyLarge" style={styles.subtitle}>
-                            Sign in to your smart home
+                            Join your smart home
                         </Text>
                     </View>
 
@@ -132,9 +122,9 @@ export default function LoginScreen({ onSwitchToRegister }: { onSwitchToRegister
                             />
                         </View>
 
-                        {/* Login Credentials */}
+                        {/* Registration Form */}
                         <Text variant="labelLarge" style={styles.sectionLabel}>
-                            Login Credentials
+                            Account Information
                         </Text>
 
                         <TextInput
@@ -156,6 +146,25 @@ export default function LoginScreen({ onSwitchToRegister }: { onSwitchToRegister
                         />
 
                         <TextInput
+                            label="Email (optional)"
+                            value={email}
+                            onChangeText={setEmail}
+                            style={styles.input}
+                            mode="outlined"
+                            autoCapitalize="none"
+                            keyboardType="email-address"
+                            theme={{
+                                colors: {
+                                    onSurfaceVariant: '#94a3b8',
+                                    outline: '#334155',
+                                    primary: '#3b82f6',
+                                }
+                            }}
+                            textColor="#e2e8f0"
+                            left={<TextInput.Icon icon="email" color="#94a3b8" />}
+                        />
+
+                        <TextInput
                             label="Password"
                             secureTextEntry
                             value={password}
@@ -173,6 +182,24 @@ export default function LoginScreen({ onSwitchToRegister }: { onSwitchToRegister
                             left={<TextInput.Icon icon="lock" color="#94a3b8" />}
                         />
 
+                        <TextInput
+                            label="Confirm Password"
+                            secureTextEntry
+                            value={confirmPassword}
+                            onChangeText={setConfirmPassword}
+                            style={styles.input}
+                            mode="outlined"
+                            theme={{
+                                colors: {
+                                    onSurfaceVariant: '#94a3b8',
+                                    outline: '#334155',
+                                    primary: '#3b82f6',
+                                }
+                            }}
+                            textColor="#e2e8f0"
+                            left={<TextInput.Icon icon="lock-check" color="#94a3b8" />}
+                        />
+
                         {error ? (
                             <Text variant="bodySmall" style={styles.errorText}>
                                 {error}
@@ -181,33 +208,27 @@ export default function LoginScreen({ onSwitchToRegister }: { onSwitchToRegister
 
                         <Button
                             mode="contained"
-                            onPress={handleLogin}
+                            onPress={handleRegister}
                             style={styles.button}
                             buttonColor="#3b82f6"
                             loading={loading}
-                            disabled={loading || !username || !password || !serverIp}
-                            icon="login"
+                            disabled={loading || !username || !password || !confirmPassword || !serverIp}
+                            icon="account-plus"
                         >
-                            Sign In
+                            Create Account
                         </Button>
 
-                        {onSwitchToRegister && (
-                            <Button
-                                mode="text"
-                                onPress={onSwitchToRegister}
-                                style={styles.switchButton}
-                                textColor="#3b82f6"
-                            >
-                                Don't have an account? Sign Up
-                            </Button>
-                        )}
-
-                        <Text variant="bodySmall" style={styles.hint}>
-                            💡 Your session will be saved securely
-                        </Text>
+                        <Button
+                            mode="text"
+                            onPress={onSwitchToLogin}
+                            style={styles.switchButton}
+                            textColor="#3b82f6"
+                        >
+                            Already have an account? Sign In
+                        </Button>
                     </View>
                 </View>
-            </View>
+            </ScrollView>
         </>
     );
 }
@@ -218,12 +239,12 @@ const styles = StyleSheet.create({
         backgroundColor: '#0f172a',
     },
     content: {
-        flex: 1,
-        justifyContent: "center",
         maxWidth: 400,
         width: "100%",
         alignSelf: "center",
         padding: 24,
+        paddingTop: 60,
+        paddingBottom: 40,
     },
     header: {
         marginBottom: 32,
@@ -279,10 +300,5 @@ const styles = StyleSheet.create({
         backgroundColor: '#7f1d1d',
         padding: 12,
         borderRadius: 8,
-    },
-    hint: {
-        marginTop: 16,
-        textAlign: "center",
-        color: '#64748b',
     },
 });

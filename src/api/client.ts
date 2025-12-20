@@ -1,22 +1,53 @@
-import axios from "axios";
+import axios from 'axios';
+import { useServerConfigStore } from '../store/serverConfigStore';
 
-export const api = axios.create({
-    baseURL: "http://10.113.86.170:8000/api/",
-    timeout: 8000,
+// Create axios instance with dynamic baseURL
+const apiClient = axios.create({
+    timeout: 10000,
     headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
     },
 });
 
+// Interceptor to set baseURL dynamically from store
+apiClient.interceptors.request.use((config) => {
+    const baseUrl = useServerConfigStore.getState().getBaseUrl();
+
+    console.log("🔍 Axios Interceptor - baseURL from store:", baseUrl);
+
+    if (!baseUrl) {
+        console.error("❌ ERROR: baseURL is empty! Server config not set.");
+        console.error("Current store state:", useServerConfigStore.getState());
+        throw new Error("Server not configured. Please set server IP.");
+    }
+
+    // Set baseURL ensuring proper path concatenation
+    config.baseURL = baseUrl + '/api';
+
+    // Ensure URL starts with / for proper concatenation
+    if (config.url && !config.url.startsWith('/')) {
+        config.url = '/' + config.url;
+    }
+
+    console.log("✅ Final request URL:", config.baseURL + config.url);
+
+    return config;
+}, (error) => {
+    console.error("❌ Request interceptor error:", error);
+    return Promise.reject(error);
+});
+
+export const api = apiClient;
+
 export const setAuthToken = (token: string | null) => {
     if (token) {
-        api.defaults.headers.common.Authorization = `Token ${token}`;
+        apiClient.defaults.headers.common['Authorization'] = `Token ${token}`;
     } else {
-        delete api.defaults.headers.common.Authorization;
+        delete apiClient.defaults.headers.common['Authorization'];
     }
 };
 
 export const controlEntity = async (entityId: number, command: any) => {
-    const response = await api.post(`/entities/${entityId}/control/`, command);
+    const response = await apiClient.post(`/entities/${entityId}/control/`, command);
     return response.data;
 };

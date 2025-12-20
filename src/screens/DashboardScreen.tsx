@@ -1,15 +1,19 @@
 import { View, ScrollView, StyleSheet, RefreshControl, StatusBar, TouchableOpacity, Animated } from "react-native";
-import { Text, IconButton } from "react-native-paper";
+import { Text, IconButton, FAB, Button } from "react-native-paper";
 import { useState, useRef, useEffect } from "react";
 import { useDeviceStore } from "../store/deviceStore";
 import { useHomeStore } from "../store/homeStore";
+import { useAuthStore } from "../store/authStore";
 import { useTheme } from "../context/ThemeContext";
 import EntityRenderer from "../renderer/EntityRenderer";
 import Collapsible from "../components/Collapsible";
+import { useNavigation } from "@react-navigation/native";
 
 export default function DashboardScreen() {
+    const navigation = useNavigation();
     const devices = useDeviceStore((s) => s.devices);
     const activeHome = useHomeStore((s) => s.activeHome);
+    const user = useAuthStore((s) => s.user);
     const loadDevices = useDeviceStore((s) => s.loadDevices);
     const controlEntity = useDeviceStore((s) => s.controlEntity);
     const { theme, mode } = useTheme();
@@ -55,20 +59,45 @@ export default function DashboardScreen() {
                 backgroundColor={theme.background}
             />
             <View style={[styles.container, { backgroundColor: theme.background }]}>
+                {/* Sticky Header */}
+                <View style={[styles.header, {
+                    backgroundColor: theme.background,
+                }]}>
+                    <View>
+                        <Text variant="headlineMedium" style={{ color: theme.text, fontWeight: 'bold' }}>
+                            Devices
+                        </Text>
+                        <Text variant="bodyMedium" style={{ color: theme.textSecondary }}>
+                            {devices.length} device{devices.length !== 1 ? 's' : ''}
+                        </Text>
+                    </View>
+                    {activeHome && (
+                        <View style={styles.headerButtons}>
+                            <Button
+                                mode="contained"
+                                icon="plus"
+                                onPress={() => navigation.navigate('ManageDevices' as never)}
+                                style={{ backgroundColor: theme.primary }}
+                                labelStyle={{ color: '#FFFFFF' }}
+                            >
+                                Add Device
+                            </Button>
+                            <IconButton
+                                icon="minus-circle"
+                                size={24}
+                                iconColor={theme.error}
+                                onPress={() => navigation.navigate('RemoveDevices' as never)}
+                                style={{ margin: 0, marginLeft: 8 }}
+                            />
+                        </View>
+                    )}
+                </View>
+
                 <ScrollView
                     refreshControl={
                         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
                     }
                 >
-                    <View style={[styles.header, { backgroundColor: theme.background }]}>
-                        <Text variant="bodyMedium" style={{ color: theme.textSecondary }}>
-                            Welcome Home
-                        </Text>
-                        <Text variant="headlineLarge" style={{ color: theme.text, fontWeight: 'bold' }}>
-                            {activeHome?.name || "My Home"}
-                        </Text>
-                    </View>
-
                     <View style={styles.statsContainer}>
                         <View style={[styles.statBox, { backgroundColor: theme.cardBackground, borderColor: theme.border }]}>
                             <Text variant="headlineSmall" style={{ color: theme.primary, fontWeight: 'bold' }}>
@@ -98,6 +127,7 @@ export default function DashboardScreen() {
                         </View>
                     </View>
 
+                    {/* Devices List */}
                     {devices.length === 0 ? (
                         <View style={styles.emptyContainer}>
                             <Text variant="titleLarge" style={{ color: theme.text }}>
@@ -179,7 +209,8 @@ export default function DashboardScreen() {
                                 );
                             })}
                         </View>
-                    )}
+                    )
+                    }
                 </ScrollView>
             </View>
         </>
@@ -191,9 +222,17 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     header: {
-        padding: 20,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 20,
         paddingTop: 50,
-        paddingBottom: 20,
+        paddingBottom: 12,
+    },
+    headerButtons: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
     },
     statsContainer: {
         flexDirection: 'row',

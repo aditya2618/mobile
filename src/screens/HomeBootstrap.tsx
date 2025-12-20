@@ -20,9 +20,26 @@ export default function HomeBootstrap({ onReady }: { onReady: () => void }) {
             try {
                 setStatus("Loading homes...");
                 await loadHomes();
+
+                // Check if user has any homes
+                const homes = useHomeStore.getState().homes;
+
+                if (homes.length === 0) {
+                    // No homes - proceed to dashboard with empty state
+                    console.log("No homes found for user. Proceeding to dashboard...");
+                    setStatus("Ready! You can add your first home.");
+                    setTimeout(() => onReady(), 500);
+                    return;
+                }
+
+                // User has homes - continue normal flow
+                setStatus("Home loaded!");
             } catch (err: any) {
                 console.error("Error loading homes:", err);
-                setError("Failed to load homes: " + err.message);
+                // Even if loading fails, proceed to dashboard
+                // User can try again from there
+                setError("Could not load homes. You can try again from the dashboard.");
+                setTimeout(() => onReady(), 1500);
             }
         })();
     }, []);
@@ -39,10 +56,17 @@ export default function HomeBootstrap({ onReady }: { onReady: () => void }) {
                     setStatus("Ready!");
                     setTimeout(() => onReady(), 500);
                 } catch (err: any) {
-                    console.error("Error loading data:", err);
-                    setError("Failed to load data: " + err.message);
+                    console.error("Error loading devices:", err);
+                    // Proceed anyway - user can see empty dashboard
+                    setError("Could not load devices. Please check your connection.");
+                    setTimeout(() => onReady(), 1500);
                 }
             })();
+        } else if (useHomeStore.getState().homes.length > 0) {
+            // User has homes but no active home selected
+            // This shouldn't normally happen, but handle it gracefully
+            console.log("No active home selected");
+            setTimeout(() => onReady(), 500);
         }
     }, [activeHome]);
 

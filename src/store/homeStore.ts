@@ -7,7 +7,9 @@ interface HomeState {
     activeHome: Home | null;
 
     loadHomes: () => Promise<void>;
+    createHome: (name: string) => Promise<void>;
     setActiveHome: (home: Home) => void;
+    reset: () => void;
 }
 
 export const useHomeStore = create<HomeState>((set) => ({
@@ -22,5 +24,17 @@ export const useHomeStore = create<HomeState>((set) => ({
         });
     },
 
+    createHome: async (name: string) => {
+        const res = await api.post("homes/", { name });
+        // Reload homes to get the new one
+        const homesRes = await api.get("homes/");
+        set({
+            homes: homesRes.data,
+            activeHome: res.data, // Set the newly created home as active
+        });
+    },
+
     setActiveHome: (home) => set({ activeHome: home }),
+
+    reset: () => set({ homes: [], activeHome: null }),
 }));

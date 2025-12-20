@@ -1,16 +1,139 @@
 import { View, StyleSheet, ScrollView } from 'react-native';
-import { Text, Card } from 'react-native-paper';
+import { Text, Card, Button, TextInput } from 'react-native-paper';
 import { StatusBar } from 'expo-status-bar';
 import { useTheme } from '../context/ThemeContext';
 import { useDeviceStore } from '../store/deviceStore';
 import { useHomeStore } from '../store/homeStore';
+import { useAuthStore } from '../store/authStore';
+import { useState } from 'react';
 
 export default function HomeScreen() {
     const { theme, mode } = useTheme();
     const devices = useDeviceStore((s) => s.devices);
     const activeHome = useHomeStore((s) => s.activeHome);
+    const homes = useHomeStore((s) => s.homes);
+    const user = useAuthStore((s) => s.user);
+    const createHome = useHomeStore((s) => s.createHome);
+    const loadHomes = useHomeStore((s) => s.loadHomes);
+
+    const [homeName, setHomeName] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
 
     const isDark = mode === 'dark';
+
+    // If no homes, show create home UI
+    if (homes.length === 0) {
+        const handleCreate = async () => {
+            if (!homeName.trim()) {
+                setError("Please enter a home name");
+                return;
+            }
+
+            setLoading(true);
+            setError("");
+
+            try {
+                console.log("Creating home:", homeName);
+                await createHome(homeName.trim());
+                console.log("✅ Home created successfully!");
+                setHomeName("");
+                // Reload homes
+                await loadHomes();
+            } catch (error: any) {
+                console.error("❌ Failed to create home:", error);
+                setError(error.response?.data?.error || error.message || "Failed to create home. Please try again.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        return (
+            <>
+                <StatusBar style={isDark ? 'light' : 'dark'} backgroundColor={theme.background} />
+                <View style={[styles.createHomeContainer, { backgroundColor: theme.background }]}>
+                    <View style={styles.createHomeContent}>
+                        {/* Icon and Welcome */}
+                        <View style={styles.createHomeHeader}>
+                            <View style={[styles.iconCircle, { backgroundColor: isDark ? theme.primary + '20' : theme.primary + '15' }]}>
+                                <Text style={[styles.createHomeIcon, { color: theme.primary }]}>
+                                    🏡
+                                </Text>
+                            </View>
+                            <Text variant="headlineMedium" style={[styles.createHomeTitle, { color: theme.text }]}>
+                                Welcome to Your Smart Home
+                            </Text>
+                            <Text variant="bodyLarge" style={[styles.createHomeSubtitle, { color: theme.textSecondary }]}>
+                                Let's get started by creating your first home
+                            </Text>
+                        </View>
+
+                        {/* Form */}
+                        <View style={styles.createHomeForm}>
+                            <TextInput
+                                label="Home Name"
+                                value={homeName}
+                                onChangeText={(text) => {
+                                    setHomeName(text);
+                                    setError("");
+                                }}
+                                mode="outlined"
+                                placeholder="e.g., My Home, Beach House"
+                                theme={{
+                                    colors: {
+                                        onSurfaceVariant: theme.textSecondary,
+                                        outline: theme.border,
+                                        primary: theme.primary,
+                                    }
+                                }}
+                                textColor={theme.text}
+                                style={[styles.createHomeInput, {
+                                    backgroundColor: isDark ? theme.cardBackground : '#FFFFFF'
+                                }]}
+                                left={<TextInput.Icon icon="home-variant" color={theme.primary} />}
+                                autoFocus
+                            />
+
+                            {error ? (
+                                <View style={[styles.createHomeErrorContainer, {
+                                    backgroundColor: isDark ? '#7f1d1d' : '#fee2e2',
+                                    borderColor: isDark ? '#991b1b' : '#fca5a5',
+                                }]}>
+                                    <Text variant="bodySmall" style={[styles.createHomeError, {
+                                        color: isDark ? '#fca5a5' : '#dc2626'
+                                    }]}>
+                                        {error}
+                                    </Text>
+                                </View>
+                            ) : null}
+
+                            <View style={[styles.createHomeHintContainer, {
+                                backgroundColor: isDark ? theme.primary + '15' : theme.primary + '10',
+                                borderColor: theme.primary + '30',
+                            }]}>
+                                <Text variant="bodySmall" style={[styles.createHomeHint, { color: theme.primary }]}>
+                                    💡 You can add rooms and devices later
+                                </Text>
+                            </View>
+
+                            <Button
+                                mode="contained"
+                                onPress={handleCreate}
+                                style={styles.createHomeButton}
+                                buttonColor={theme.primary}
+                                loading={loading}
+                                disabled={loading || !homeName.trim()}
+                                icon="plus-circle"
+                                contentStyle={styles.createHomeButtonContent}
+                            >
+                                Create My Home
+                            </Button>
+                        </View>
+                    </View>
+                </View>
+            </>
+        );
+    }
 
     // Calculate stats
     const totalDevices = devices.length;
@@ -34,8 +157,8 @@ export default function HomeScreen() {
             <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
                 {/* Header */}
                 <View style={styles.header}>
-                    <Text variant="headlineMedium" style={{ color: theme.text, fontWeight: 'bold' }}>
-                        Welcome Home
+                    <Text variant="titleLarge" style={{ color: theme.text, fontWeight: 'bold' }}>
+                        Welcome, {user?.username || 'User'}
                     </Text>
                     <Text variant="bodyLarge" style={{ color: theme.textSecondary, marginTop: 4 }}>
                         {activeHome?.name || 'Smart Home'}
@@ -147,5 +270,71 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingVertical: 12,
         borderBottomWidth: 1,
+    },
+    // Create Home Styles
+    createHomeContainer: {
+        flex: 1,
+    },
+    createHomeContent: {
+        flex: 1,
+        justifyContent: "center",
+        maxWidth: 450,
+        width: "100%",
+        alignSelf: "center",
+        padding: 32,
+    },
+    createHomeHeader: {
+        alignItems: "center",
+        marginBottom: 40,
+    },
+    iconCircle: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 24,
+    },
+    createHomeIcon: {
+        fontSize: 56,
+    },
+    createHomeTitle: {
+        fontWeight: "bold",
+        marginBottom: 12,
+        textAlign: "center",
+    },
+    createHomeSubtitle: {
+        textAlign: "center",
+        lineHeight: 24,
+        paddingHorizontal: 16,
+    },
+    createHomeForm: {
+        gap: 20,
+    },
+    createHomeInput: {
+        fontSize: 16,
+    },
+    createHomeButton: {
+        marginTop: 8,
+    },
+    createHomeButtonContent: {
+        paddingVertical: 8,
+    },
+    createHomeErrorContainer: {
+        padding: 12,
+        borderRadius: 8,
+        borderWidth: 1,
+    },
+    createHomeError: {
+        textAlign: "center",
+    },
+    createHomeHintContainer: {
+        padding: 12,
+        borderRadius: 8,
+        borderWidth: 1,
+    },
+    createHomeHint: {
+        textAlign: "center",
+        fontWeight: '500',
     },
 });

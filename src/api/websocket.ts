@@ -1,6 +1,6 @@
 class WebSocketClient {
     private ws: WebSocket | null = null;
-    private url: string;
+    private url: string = '';
     private reconnectAttempts = 0;
     private maxReconnectAttempts = 5;
     private reconnectDelay = 3000;
@@ -9,14 +9,24 @@ class WebSocketClient {
     private isConnecting = false;
     private shouldReconnect = true;
 
-    constructor(url: string) {
+    constructor() {
+        // No URL in constructor - will be set via setUrl()
+    }
+
+    setUrl(url: string) {
         this.url = url;
+        console.log("WebSocket URL set to:", url);
     }
 
     connect(token: string, homeId: number, onMessage: (data: any) => void) {
         // Prevent duplicate connections
         if (this.isConnecting || (this.ws && this.ws.readyState === WebSocket.OPEN)) {
             console.log("WebSocket already connected or connecting");
+            return;
+        }
+
+        if (!this.url) {
+            console.error("WebSocket URL not set. Call setUrl() first.");
             return;
         }
 
@@ -102,6 +112,10 @@ class WebSocketClient {
         this.isConnecting = false;
     }
 
+    isConnected(): boolean {
+        return this.ws !== null && this.ws.readyState === WebSocket.OPEN;
+    }
+
     send(data: any) {
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
             this.ws.send(JSON.stringify(data));
@@ -110,4 +124,4 @@ class WebSocketClient {
 }
 
 // Create a singleton instance
-export const wsClient = new WebSocketClient("ws://10.113.86.170:8000/ws");
+export const wsClient = new WebSocketClient();

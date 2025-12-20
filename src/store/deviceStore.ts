@@ -60,4 +60,6 @@ export const useDeviceStore = create<DeviceState>((set) => ({
             throw error;
         }
     },
+
+    reset: () => set({ devices: [] }),
 }));

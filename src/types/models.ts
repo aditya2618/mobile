@@ -28,9 +28,45 @@ export interface Home {
     role: "owner" | "family" | "guest";
 }
 
+export interface SceneAction {
+    id: number;
+    entity: number;
+    entity_name: string;
+    entity_type: string;
+    value: any;
+    order: number;
+}
+
 export interface Scene {
     id: number;
+    home: number;
     name: string;
-    icon?: string;
+    actions?: SceneAction[];
+}
+
+export interface AutomationTrigger {
+    id: number;
+    entity: number;
+    entity_name?: string;
+    attribute: string;  // "temperature", "humidity", "state", etc.
+    operator: ">" | "<" | "==";
+    value: string;
+}
+
+export interface AutomationAction {
+    id: number;
+    entity?: number;
+    entity_name?: string;
+    scene?: number;
+    scene_name?: string;
+    command?: any;  // JSON object for entity control
+}
+
+export interface Automation {
+    id: number;
+    home: number;
+    name: string;
     enabled: boolean;
+    triggers: AutomationTrigger[];
+    actions: AutomationAction[];
 }
