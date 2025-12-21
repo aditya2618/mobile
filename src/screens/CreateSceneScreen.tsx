@@ -83,9 +83,7 @@ export default function CreateSceneScreen() {
 
     // Get all controllable entities from devices in the active home
     // Note: devices store is already filtered by home via loadDevices(homeId)
-    // but we add an extra check to be safe
     const controllableEntities = devices
-        .filter(device => device.home === activeHome?.id) // Extra safety check
         .flatMap(device =>
             device.entities?.filter(e => e.is_controllable).map(e => ({
                 id: e.id,
