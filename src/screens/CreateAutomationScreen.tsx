@@ -25,6 +25,7 @@ interface Action {
     scene?: number;
     scene_name?: string;
     command?: any;
+    delay_seconds?: number; // New field for delayed actions
 }
 
 export default function CreateAutomationScreen() {
@@ -32,10 +33,13 @@ export default function CreateAutomationScreen() {
     const { theme, mode } = useTheme();
     const activeHome = useHomeStore((s) => s.activeHome);
     const devices = useDeviceStore((s) => s.devices);
+    const loadDevices = useDeviceStore((s) => s.loadDevices);
     const scenes = useSceneStore((s) => s.scenes);
     const { createAutomation } = useAutomationStore();
 
     const [automationName, setAutomationName] = useState('');
+    const [triggerLogic, setTriggerLogic] = useState<'AND' | 'OR'>('AND'); // New state
+    const [cooldownSeconds, setCooldownSeconds] = useState(60); // New state
     const [triggers, setTriggers] = useState<Trigger[]>([]);
     const [actions, setActions] = useState<Action[]>([]);
     const [showTriggerModal, setShowTriggerModal] = useState(false);
@@ -45,6 +49,13 @@ export default function CreateAutomationScreen() {
     const isDark = mode === 'dark';
     const cardBg = isDark ? theme.cardBackground : '#FFFFFF';
     const borderColor = isDark ? 'transparent' : 'rgba(0,0,0,0.08)';
+
+    // Load devices when component mounts
+    useEffect(() => {
+        if (activeHome) {
+            loadDevices(activeHome.id);
+        }
+    }, [activeHome]);
 
     // Get all entities
     const allEntities = devices.flatMap(device =>
@@ -72,10 +83,16 @@ export default function CreateAutomationScreen() {
 
     const addAction = (type: 'entity' | 'scene', entityId?: number, entityName?: string, sceneId?: number, sceneName?: string, command?: any) => {
         const newAction: Action = type === 'scene'
-            ? { scene: sceneId, scene_name: sceneName }
-            : { entity: entityId, entity_name: entityName, command };
+            ? { scene: sceneId, scene_name: sceneName, delay_seconds: 0 }
+            : { entity: entityId, entity_name: entityName, command, delay_seconds: 0 };
 
         setActions([...actions, newAction]);
+    };
+
+    const updateActionDelay = (index: number, delay: number) => {
+        const updated = [...actions];
+        updated[index].delay_seconds = delay;
+        setActions(updated);
     };
 
     const removeAction = (index: number) => {
@@ -123,7 +140,14 @@ export default function CreateAutomationScreen() {
                 }
             });
 
-            await createAutomation(activeHome.id, automationName, triggersData, actionsData);
+            await createAutomation(
+                activeHome.id,
+                automationName,
+                triggersData,
+                actionsData,
+                triggerLogic,
+                cooldownSeconds
+            );
 
             Alert.alert('Success', 'Automation created successfully');
             navigation.goBack();
@@ -140,7 +164,8 @@ export default function CreateAutomationScreen() {
 
     const getActionSummary = (action: Action) => {
         if (action.scene) {
-            return `Run "${action.scene_name}" scene`;
+            const delay = action.delay_seconds && action.delay_seconds > 0 ? ` (after ${action.delay_seconds}s)` : '';
+            return `Run "${action.scene_name}" scene${delay}`;
         }
 
         if (action.entity && action.command) {
@@ -154,7 +179,8 @@ export default function CreateAutomationScreen() {
             if (action.command.speed !== undefined) {
                 parts.push(`at speed ${action.command.speed}`);
             }
-            return `${action.entity_name}: ${parts.join(' ')}`;
+            const delay = action.delay_seconds && action.delay_seconds > 0 ? ` (after ${action.delay_seconds}s)` : '';
+            return `${action.entity_name}: ${parts.join(' ')}${delay}`;
         }
 
         return 'Control device';
@@ -208,6 +234,69 @@ export default function CreateAutomationScreen() {
                                     }
                                 ]}
                             />
+                        </Card.Content>
+                    </Card>
+
+                    {/* Advanced Settings Card */}
+                    <Card style={[styles.card, { backgroundColor: cardBg, borderColor, borderWidth: 1 }]}>
+                        <Card.Content>
+                            <Text variant="titleSmall" style={{ color: theme.text, marginBottom: 12, fontWeight: '600' }}>
+                                Advanced Settings
+                            </Text>
+
+                            {/* Trigger Logic Toggle */}
+                            <View style={{ marginBottom: 16 }}>
+                                <Text variant="bodySmall" style={{ color: theme.textSecondary, marginBottom: 8 }}>
+                                    Trigger Logic (for multiple conditions)
+                                </Text>
+                                <View style={{ flexDirection: 'row', gap: 8 }}>
+                                    <Button
+                                        mode={triggerLogic === 'AND' ? 'contained' : 'outlined'}
+                                        onPress={() => setTriggerLogic('AND')}
+                                        buttonColor={triggerLogic === 'AND' ? theme.primary : 'transparent'}
+                                        textColor={triggerLogic === 'AND' ? '#FFF' : theme.text}
+                                        style={{ flex: 1 }}
+                                        compact
+                                    >
+                                        AND (All must match)
+                                    </Button>
+                                    <Button
+                                        mode={triggerLogic === 'OR' ? 'contained' : 'outlined'}
+                                        onPress={() => setTriggerLogic('OR')}
+                                        buttonColor={triggerLogic === 'OR' ? theme.primary : 'transparent'}
+                                        textColor={triggerLogic === 'OR' ? '#FFF' : theme.text}
+                                        style={{ flex: 1 }}
+                                        compact
+                                    >
+                                        OR (Any can match)
+                                    </Button>
+                                </View>
+                            </View>
+
+                            {/* Cooldown Input */}
+                            <View>
+                                <Text variant="bodySmall" style={{ color: theme.textSecondary, marginBottom: 8 }}>
+                                    Cooldown (seconds)
+                                </Text>
+                                <TextInput
+                                    value={cooldownSeconds.toString()}
+                                    onChangeText={(v) => setCooldownSeconds(parseInt(v) || 60)}
+                                    keyboardType="number-pad"
+                                    placeholder="60"
+                                    placeholderTextColor={theme.textSecondary}
+                                    style={[
+                                        styles.input,
+                                        {
+                                            backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)',
+                                            color: theme.text,
+                                            borderColor,
+                                        }
+                                    ]}
+                                />
+                                <Text variant="bodySmall" style={{ color: theme.textSecondary, marginTop: 4 }}>
+                                    Minimum time between executions (prevents rapid re-triggering)
+                                </Text>
+                            </View>
                         </Card.Content>
                     </Card>
 
@@ -282,8 +371,8 @@ export default function CreateAutomationScreen() {
                                 </View>
                             ) : (
                                 actions.map((action, index) => (
-                                    <View key={index}>
-                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8 }}>
+                                    <View key={index} style={{ marginBottom: 12 }}>
+                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <View style={{ flex: 1 }}>
                                                 <Text variant="bodyMedium" style={{ color: theme.primary }}>
                                                     → {getActionSummary(action)}
@@ -296,7 +385,31 @@ export default function CreateAutomationScreen() {
                                                 onPress={() => removeAction(index)}
                                             />
                                         </View>
-                                        {index < actions.length - 1 && <Divider />}
+
+                                        {/* Delay Input */}
+                                        <View style={{ marginTop: 8, marginLeft: 20 }}>
+                                            <Text variant="bodySmall" style={{ color: theme.textSecondary, marginBottom: 4 }}>
+                                                Delay (seconds)
+                                            </Text>
+                                            <TextInput
+                                                value={(action.delay_seconds || 0).toString()}
+                                                onChangeText={(v) => updateActionDelay(index, parseInt(v) || 0)}
+                                                keyboardType="number-pad"
+                                                placeholder="0"
+                                                placeholderTextColor={theme.textSecondary}
+                                                style={[
+                                                    styles.input,
+                                                    {
+                                                        backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)',
+                                                        color: theme.text,
+                                                        borderColor,
+                                                        paddingVertical: 8,
+                                                    }
+                                                ]}
+                                            />
+                                        </View>
+
+                                        {index < actions.length - 1 && <Divider style={{ marginTop: 12 }} />}
                                     </View>
                                 ))
                             )}

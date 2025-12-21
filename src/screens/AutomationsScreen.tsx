@@ -13,7 +13,11 @@ export default function AutomationsScreen() {
     const navigation = useNavigation();
     const { theme, mode } = useTheme();
     const activeHome = useHomeStore((s) => s.activeHome);
-    const { automations, loadAutomations, deleteAutomation, toggleAutomation } = useAutomationStore();
+    // Fix: Use separate selectors for reactive state updates
+    const automations = useAutomationStore((s) => s.automations);
+    const loadAutomations = useAutomationStore((s) => s.loadAutomations);
+    const deleteAutomation = useAutomationStore((s) => s.deleteAutomation);
+    const toggleAutomation = useAutomationStore((s) => s.toggleAutomation);
     const [loading, setLoading] = useState(false);
 
     const isDark = mode === 'dark';
@@ -55,6 +59,7 @@ export default function AutomationsScreen() {
                     onPress: async () => {
                         try {
                             await deleteAutomation(id);
+                            Alert.alert('Success', 'Automation deleted successfully');
                         } catch (error: any) {
                             Alert.alert('Error', `Failed to delete automation: ${error.message}`);
                         }

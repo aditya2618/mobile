@@ -2,6 +2,7 @@ import { View, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-nat
 import { Text, Button, Chip, IconButton, Portal, Surface } from 'react-native-paper';
 import { useState } from 'react';
 import Slider from '@react-native-community/slider';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 interface Entity {
     id: number;
@@ -23,6 +24,27 @@ interface AutomationActionModalProps {
     theme: any;
     isDark: boolean;
 }
+
+// Helper function to get icon for entity type
+const getEntityIcon = (entityType: string): string => {
+    switch (entityType.toLowerCase()) {
+        case 'light': return 'lightbulb';
+        case 'fan': return 'fan';
+        case 'switch': return 'light-switch';
+        case 'sensor': return 'chart-line';
+        default: return 'devices';
+    }
+};
+
+// Helper function to get color for entity type
+const getEntityColor = (entityType: string): string => {
+    switch (entityType.toLowerCase()) {
+        case 'light': return '#FFE66D';
+        case 'fan': return '#4ECDC4';
+        case 'switch': return '#95E1D3';
+        default: return '#9C27B0';
+    }
+};
 
 export default function AutomationActionModal({ visible, entities, scenes, onClose, onAddAction, theme, isDark }: AutomationActionModalProps) {
     const [step, setStep] = useState<'type' | 'select' | 'configure'>('type');
@@ -86,7 +108,17 @@ export default function AutomationActionModal({ visible, entities, scenes, onClo
     };
 
     const cardBg = isDark ? theme.cardBackground : '#FFFFFF';
-    const borderColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+    const borderColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)';
+    const selectedBg = isDark ? 'rgba(76, 175, 80, 0.15)' : 'rgba(76, 175, 80, 0.1)';
+
+    const getStepTitle = () => {
+        switch (step) {
+            case 'type': return '⚡ Choose Action Type';
+            case 'select': return actionType === 'entity' ? '📱 Select Device' : '🎬 Select Scene';
+            case 'configure': return '⚙️ Configure Action';
+            default: return '';
+        }
+    };
 
     return (
         <Portal>
@@ -97,7 +129,7 @@ export default function AutomationActionModal({ visible, entities, scenes, onClo
                 transparent={true}
             >
                 <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.5)' }]}>
-                    <Surface style={[styles.modalContent, { backgroundColor: cardBg }]}>
+                    <Surface style={[styles.modalContent, { backgroundColor: theme.background }]} elevation={5}>
                         {/* Header */}
                         <View style={[styles.header, { borderBottomColor: borderColor }]}>
                             <IconButton
@@ -106,67 +138,95 @@ export default function AutomationActionModal({ visible, entities, scenes, onClo
                                 iconColor={theme.text}
                                 onPress={() => step === 'type' ? handleClose() : handleBack()}
                             />
-                            <Text variant="titleLarge" style={{ color: theme.text, fontWeight: 'bold', flex: 1 }}>
-                                Add Action
-                            </Text>
+                            <View style={{ flex: 1 }}>
+                                <Text variant="titleLarge" style={{ color: theme.text, fontWeight: 'bold' }}>
+                                    {getStepTitle()}
+                                </Text>
+                                <Text variant="bodySmall" style={{ color: theme.textSecondary }}>
+                                    {step === 'type' && 'What should happen?'}
+                                    {step === 'select' && actionType === 'entity' && 'Choose device to control'}
+                                    {step === 'select' && actionType === 'scene' && 'Choose scene to activate'}
+                                    {step === 'configure' && 'Set device parameters'}
+                                </Text>
+                            </View>
                         </View>
 
                         {/* Content */}
-                        <ScrollView style={styles.content}>
+                        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
                             {step === 'type' && (
                                 <View>
-                                    <Text variant="bodyMedium" style={{ color: theme.textSecondary, marginBottom: 16 }}>
-                                        Choose what should happen when triggered
-                                    </Text>
-
                                     <TouchableOpacity
                                         onPress={() => handleTypeSelect('entity')}
-                                        style={[styles.typeCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)', borderColor }]}
+                                        style={[styles.typeCard, { backgroundColor: cardBg, borderColor }]}
                                     >
-                                        <Text style={{ fontSize: 32, marginBottom: 8 }}>💡</Text>
-                                        <Text variant="titleMedium" style={{ color: theme.text, marginBottom: 4 }}>
-                                            Control Device
-                                        </Text>
-                                        <Text variant="bodySmall" style={{ color: theme.textSecondary }}>
-                                            Turn on/off lights, fans, etc.
-                                        </Text>
+                                        <View style={[styles.typeIconContainer, { backgroundColor: '#4CAF50' + '20' }]}>
+                                            <MaterialCommunityIcons name="devices" size={32} color="#4CAF50" />
+                                        </View>
+                                        <View style={{ flex: 1 }}>
+                                            <Text variant="titleMedium" style={{ color: theme.text, marginBottom: 4, fontWeight: '600' }}>
+                                                Control Device
+                                            </Text>
+                                            <Text variant="bodySmall" style={{ color: theme.textSecondary }}>
+                                                Turn on/off lights, fans, switches
+                                            </Text>
+                                        </View>
+                                        <MaterialCommunityIcons name="chevron-right" size={24} color={theme.textSecondary} />
                                     </TouchableOpacity>
 
                                     <TouchableOpacity
                                         onPress={() => handleTypeSelect('scene')}
-                                        style={[styles.typeCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)', borderColor }]}
+                                        style={[styles.typeCard, { backgroundColor: cardBg, borderColor }]}
                                     >
-                                        <Text style={{ fontSize: 32, marginBottom: 8 }}>🎬</Text>
-                                        <Text variant="titleMedium" style={{ color: theme.text, marginBottom: 4 }}>
-                                            Run Scene
-                                        </Text>
-                                        <Text variant="bodySmall" style={{ color: theme.textSecondary }}>
-                                            Trigger a saved scene
-                                        </Text>
+                                        <View style={[styles.typeIconContainer, { backgroundColor: '#9C27B0' + '20' }]}>
+                                            <MaterialCommunityIcons name="movie-open" size={32} color="#9C27B0" />
+                                        </View>
+                                        <View style={{ flex: 1 }}>
+                                            <Text variant="titleMedium" style={{ color: theme.text, marginBottom: 4, fontWeight: '600' }}>
+                                                Run Scene
+                                            </Text>
+                                            <Text variant="bodySmall" style={{ color: theme.textSecondary }}>
+                                                Activate a saved scene configuration
+                                            </Text>
+                                        </View>
+                                        <MaterialCommunityIcons name="chevron-right" size={24} color={theme.textSecondary} />
                                     </TouchableOpacity>
                                 </View>
                             )}
 
                             {step === 'select' && actionType === 'entity' && (
                                 <View>
-                                    <Text variant="bodyMedium" style={{ color: theme.textSecondary, marginBottom: 16 }}>
-                                        Select device to control
-                                    </Text>
                                     {entities.filter(e => e.entity_type !== 'sensor').map((entity) => (
                                         <TouchableOpacity
                                             key={entity.id}
                                             onPress={() => handleEntitySelect(entity)}
-                                            style={[styles.listItem, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)', borderColor }]}
+                                            style={[styles.entityCard, { backgroundColor: cardBg, borderColor }]}
                                         >
+                                            <View
+                                                style={[
+                                                    styles.entityIconSmall,
+                                                    { backgroundColor: getEntityColor(entity.entity_type) + '20' },
+                                                ]}
+                                            >
+                                                <MaterialCommunityIcons
+                                                    name={getEntityIcon(entity.entity_type) as any}
+                                                    size={24}
+                                                    color={getEntityColor(entity.entity_type)}
+                                                />
+                                            </View>
                                             <View style={{ flex: 1 }}>
-                                                <Text variant="titleMedium" style={{ color: theme.text }}>
+                                                <Text variant="bodyLarge" style={{ color: theme.text }}>
                                                     {entity.name}
                                                 </Text>
-                                                <Chip mode="outlined" compact textStyle={{ fontSize: 11 }} style={{ marginTop: 4, alignSelf: 'flex-start' }}>
+                                                <Chip
+                                                    mode="outlined"
+                                                    compact
+                                                    textStyle={{ fontSize: 11 }}
+                                                    style={{ marginTop: 4, alignSelf: 'flex-start' }}
+                                                >
                                                     {entity.entity_type}
                                                 </Chip>
                                             </View>
-                                            <IconButton icon="chevron-right" size={24} iconColor={theme.textSecondary} />
+                                            <MaterialCommunityIcons name="chevron-right" size={24} color={theme.textSecondary} />
                                         </TouchableOpacity>
                                     ))}
                                 </View>
@@ -174,19 +234,24 @@ export default function AutomationActionModal({ visible, entities, scenes, onClo
 
                             {step === 'select' && actionType === 'scene' && (
                                 <View>
-                                    <Text variant="bodyMedium" style={{ color: theme.textSecondary, marginBottom: 16 }}>
-                                        Select scene to run
-                                    </Text>
                                     {scenes.map((scene) => (
                                         <TouchableOpacity
                                             key={scene.id}
                                             onPress={() => handleSceneSelect(scene)}
-                                            style={[styles.listItem, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)', borderColor }]}
+                                            style={[styles.sceneCard, { backgroundColor: cardBg, borderColor }]}
                                         >
+                                            <View
+                                                style={[
+                                                    styles.sceneIcon,
+                                                    { backgroundColor: '#9C27B0' + '20' },
+                                                ]}
+                                            >
+                                                <MaterialCommunityIcons name="movie-open" size={24} color="#9C27B0" />
+                                            </View>
                                             <Text variant="titleMedium" style={{ color: theme.text, flex: 1 }}>
                                                 {scene.name}
                                             </Text>
-                                            <IconButton icon="chevron-right" size={24} iconColor={theme.textSecondary} />
+                                            <MaterialCommunityIcons name="chevron-right" size={24} color={theme.textSecondary} />
                                         </TouchableOpacity>
                                     ))}
                                 </View>
@@ -194,14 +259,21 @@ export default function AutomationActionModal({ visible, entities, scenes, onClo
 
                             {step === 'configure' && selectedEntity && (
                                 <View>
-                                    <Text variant="bodyMedium" style={{ color: theme.textSecondary, marginBottom: 16 }}>
-                                        Configure {selectedEntity.name}
-                                    </Text>
+                                    <View style={[styles.selectionSummary, { backgroundColor: selectedBg, borderColor: '#4CAF50' }]}>
+                                        <MaterialCommunityIcons
+                                            name={getEntityIcon(selectedEntity.entity_type) as any}
+                                            size={20}
+                                            color="#4CAF50"
+                                        />
+                                        <Text variant="bodyMedium" style={{ color: '#4CAF50', flex: 1, marginLeft: 8 }}>
+                                            {selectedEntity.name}
+                                        </Text>
+                                    </View>
 
                                     {/* Power Control */}
                                     <View style={styles.controlSection}>
-                                        <Text variant="titleSmall" style={{ color: theme.text, marginBottom: 12, fontWeight: '600' }}>
-                                            POWER
+                                        <Text variant="labelLarge" style={{ color: theme.text, marginBottom: 12, letterSpacing: 1 }}>
+                                            POWER STATE
                                         </Text>
                                         <View style={{ flexDirection: 'row', gap: 12 }}>
                                             <TouchableOpacity
@@ -209,16 +281,24 @@ export default function AutomationActionModal({ visible, entities, scenes, onClo
                                                 style={[
                                                     styles.powerButton,
                                                     {
-                                                        backgroundColor: command.power ? theme.primary : 'transparent',
-                                                        borderColor: command.power ? theme.primary : borderColor,
-                                                    }
+                                                        backgroundColor: command.power ? '#4CAF50' : 'transparent',
+                                                        borderColor: command.power ? '#4CAF50' : borderColor,
+                                                    },
                                                 ]}
                                             >
-                                                <Text style={{
-                                                    color: command.power ? '#FFFFFF' : theme.text,
-                                                    fontWeight: '600',
-                                                    fontSize: 16
-                                                }}>
+                                                <MaterialCommunityIcons
+                                                    name="power"
+                                                    size={20}
+                                                    color={command.power ? '#FFFFFF' : theme.text}
+                                                />
+                                                <Text
+                                                    style={{
+                                                        color: command.power ? '#FFFFFF' : theme.text,
+                                                        fontWeight: '600',
+                                                        fontSize: 16,
+                                                        marginLeft: 8,
+                                                    }}
+                                                >
                                                     ON
                                                 </Text>
                                             </TouchableOpacity>
@@ -229,14 +309,22 @@ export default function AutomationActionModal({ visible, entities, scenes, onClo
                                                     {
                                                         backgroundColor: !command.power ? theme.error : 'transparent',
                                                         borderColor: !command.power ? theme.error : borderColor,
-                                                    }
+                                                    },
                                                 ]}
                                             >
-                                                <Text style={{
-                                                    color: !command.power ? '#FFFFFF' : theme.text,
-                                                    fontWeight: '600',
-                                                    fontSize: 16
-                                                }}>
+                                                <MaterialCommunityIcons
+                                                    name="power-off"
+                                                    size={20}
+                                                    color={!command.power ? '#FFFFFF' : theme.text}
+                                                />
+                                                <Text
+                                                    style={{
+                                                        color: !command.power ? '#FFFFFF' : theme.text,
+                                                        fontWeight: '600',
+                                                        fontSize: 16,
+                                                        marginLeft: 8,
+                                                    }}
+                                                >
                                                     OFF
                                                 </Text>
                                             </TouchableOpacity>
@@ -246,13 +334,23 @@ export default function AutomationActionModal({ visible, entities, scenes, onClo
                                     {/* Brightness (for lights) */}
                                     {selectedEntity.entity_type === 'light' && command.brightness !== undefined && (
                                         <View style={styles.controlSection}>
-                                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
-                                                <Text variant="titleSmall" style={{ color: theme.text, fontWeight: '600' }}>
-                                                    BRIGHTNESS
-                                                </Text>
-                                                <Text variant="titleMedium" style={{ color: theme.primary, fontWeight: 'bold' }}>
-                                                    {command.brightness}%
-                                                </Text>
+                                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12, alignItems: 'center' }}>
+                                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                    <MaterialCommunityIcons name="brightness-6" size={20} color={theme.text} />
+                                                    <Text variant="labelLarge" style={{ color: theme.text, marginLeft: 8, letterSpacing: 1 }}>
+                                                        BRIGHTNESS
+                                                    </Text>
+                                                </View>
+                                                <View
+                                                    style={[
+                                                        styles.valueBadge,
+                                                        { backgroundColor: '#FFE66D' + '20', borderColor: '#FFE66D' },
+                                                    ]}
+                                                >
+                                                    <Text variant="titleMedium" style={{ color: '#FFE66D', fontWeight: 'bold' }}>
+                                                        {command.brightness}%
+                                                    </Text>
+                                                </View>
                                             </View>
                                             <Slider
                                                 value={command.brightness}
@@ -260,9 +358,9 @@ export default function AutomationActionModal({ visible, entities, scenes, onClo
                                                 minimumValue={0}
                                                 maximumValue={100}
                                                 step={1}
-                                                minimumTrackTintColor={theme.primary}
+                                                minimumTrackTintColor="#FFE66D"
                                                 maximumTrackTintColor={borderColor}
-                                                thumbTintColor={theme.primary}
+                                                thumbTintColor="#FFE66D"
                                                 style={{ height: 40 }}
                                             />
                                         </View>
@@ -271,9 +369,12 @@ export default function AutomationActionModal({ visible, entities, scenes, onClo
                                     {/* Speed (for fans) */}
                                     {selectedEntity.entity_type === 'fan' && command.speed !== undefined && (
                                         <View style={styles.controlSection}>
-                                            <Text variant="titleSmall" style={{ color: theme.text, marginBottom: 12, fontWeight: '600' }}>
-                                                SPEED
-                                            </Text>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                                                <MaterialCommunityIcons name="speedometer" size={20} color={theme.text} />
+                                                <Text variant="labelLarge" style={{ color: theme.text, marginLeft: 8, letterSpacing: 1 }}>
+                                                    FAN SPEED
+                                                </Text>
+                                            </View>
                                             <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'space-between' }}>
                                                 {[1, 2, 3, 4, 5].map((speed) => (
                                                     <TouchableOpacity
@@ -282,15 +383,18 @@ export default function AutomationActionModal({ visible, entities, scenes, onClo
                                                         style={[
                                                             styles.speedButton,
                                                             {
-                                                                backgroundColor: command.speed === speed ? theme.primary : 'transparent',
-                                                                borderColor: command.speed === speed ? theme.primary : borderColor,
-                                                            }
+                                                                backgroundColor: command.speed === speed ? '#4ECDC4' : 'transparent',
+                                                                borderColor: command.speed === speed ? '#4ECDC4' : borderColor,
+                                                            },
                                                         ]}
                                                     >
-                                                        <Text style={{
-                                                            color: command.speed === speed ? '#FFFFFF' : theme.text,
-                                                            fontWeight: '600'
-                                                        }}>
+                                                        <Text
+                                                            style={{
+                                                                color: command.speed === speed ? '#FFFFFF' : theme.text,
+                                                                fontWeight: '700',
+                                                                fontSize: 18,
+                                                            }}
+                                                        >
                                                             {speed}
                                                         </Text>
                                                     </TouchableOpacity>
@@ -300,6 +404,8 @@ export default function AutomationActionModal({ visible, entities, scenes, onClo
                                     )}
                                 </View>
                             )}
+
+                            <View style={{ height: 40 }} />
                         </ScrollView>
 
                         {/* Footer */}
@@ -310,6 +416,7 @@ export default function AutomationActionModal({ visible, entities, scenes, onClo
                                     onPress={handleBack}
                                     style={{ flex: 1 }}
                                     textColor={theme.text}
+                                    icon="arrow-left"
                                 >
                                     Back
                                 </Button>
@@ -317,7 +424,8 @@ export default function AutomationActionModal({ visible, entities, scenes, onClo
                                     mode="contained"
                                     onPress={handleAddAction}
                                     style={{ flex: 1 }}
-                                    buttonColor={theme.primary}
+                                    buttonColor="#4CAF50"
+                                    icon="check"
                                 >
                                     Add Action
                                 </Button>
@@ -345,20 +453,37 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 8,
-        paddingVertical: 8,
+        paddingVertical: 12,
         borderBottomWidth: 1,
     },
     content: {
         padding: 20,
     },
+    selectionSummary: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 12,
+        borderRadius: 12,
+        borderWidth: 1,
+        marginBottom: 24,
+    },
     typeCard: {
-        padding: 20,
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
         borderRadius: 16,
         borderWidth: 1,
         marginBottom: 16,
-        alignItems: 'center',
     },
-    listItem: {
+    typeIconContainer: {
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 16,
+    },
+    entityCard: {
         flexDirection: 'row',
         alignItems: 'center',
         padding: 16,
@@ -366,21 +491,52 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         marginBottom: 12,
     },
+    entityIconSmall: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 12,
+    },
+    sceneCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        borderRadius: 12,
+        borderWidth: 1,
+        marginBottom: 12,
+    },
+    sceneIcon: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 12,
+    },
     controlSection: {
-        marginBottom: 24,
+        marginBottom: 28,
     },
     powerButton: {
         flex: 1,
+        flexDirection: 'row',
         paddingVertical: 16,
         borderRadius: 12,
         borderWidth: 2,
         alignItems: 'center',
         justifyContent: 'center',
     },
+    valueBadge: {
+        paddingHorizontal: 16,
+        paddingVertical: 6,
+        borderRadius: 20,
+        borderWidth: 1,
+    },
     speedButton: {
         flex: 1,
-        paddingVertical: 12,
-        borderRadius: 8,
+        paddingVertical: 16,
+        borderRadius: 12,
         borderWidth: 2,
         alignItems: 'center',
         justifyContent: 'center',

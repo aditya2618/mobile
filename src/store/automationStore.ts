@@ -5,7 +5,14 @@ import { Automation } from "../types/models";
 interface AutomationState {
     automations: Automation[];
     loadAutomations: (homeId: number) => Promise<void>;
-    createAutomation: (homeId: number, name: string, triggersData: any[], actionsData: any[]) => Promise<void>;
+    createAutomation: (
+        homeId: number,
+        name: string,
+        triggersData: any[],
+        actionsData: any[],
+        triggerLogic?: 'AND' | 'OR',
+        cooldownSeconds?: number
+    ) => Promise<void>;
     updateAutomation: (id: number, name: string, triggersData: any[], actionsData: any[]) => Promise<void>;
     deleteAutomation: (id: number) => Promise<void>;
     toggleAutomation: (id: number) => Promise<void>;
@@ -21,11 +28,13 @@ export const useAutomationStore = create<AutomationState>((set, get) => ({
         set({ automations: res.data });
     },
 
-    createAutomation: async (homeId, name, triggersData, actionsData) => {
+    createAutomation: async (homeId, name, triggersData, actionsData, triggerLogic = 'AND', cooldownSeconds = 60) => {
         console.log('➕ Creating automation:', name);
         const res = await api.post(`homes/${homeId}/automations/`, {
             name,
             enabled: true,
+            trigger_logic: triggerLogic,
+            cooldown_seconds: cooldownSeconds,
             triggers_data: triggersData,
             actions_data: actionsData
         });

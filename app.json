@@ -22,7 +22,8 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "usesCleartextTraffic": true
+      "usesCleartextTraffic": true,
+      "package": "com.imphal.smarthome"
     },
     "web": {
       "favicon": "./assets/favicon.png"

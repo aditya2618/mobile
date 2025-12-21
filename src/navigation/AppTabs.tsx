@@ -11,6 +11,7 @@ import ManageDevicesScreen from "../screens/ManageDevicesScreen";
 import RemoveDevicesScreen from "../screens/RemoveDevicesScreen";
 import SystemStatusScreen from "../screens/SystemStatusScreen";
 import LogsScreen from "../screens/LogsScreen";
+import EnergyDashboardScreen from "../screens/EnergyDashboardScreen";
 import CreateSceneScreen from "../screens/CreateSceneScreen";
 import EditSceneScreen from "../screens/EditSceneScreen";
 import { useTheme } from "../context/ThemeContext";
@@ -80,6 +81,10 @@ function SettingsStackScreen() {
             <SettingsStack.Screen
                 name="Logs"
                 component={LogsScreen}
+            />
+            <SettingsStack.Screen
+                name="EnergyDashboard"
+                component={EnergyDashboardScreen}
             />
         </SettingsStack.Navigator>
     );

@@ -1,5 +1,5 @@
 import { View, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
-import { Text, Card, Button, Avatar, Divider, Switch, TextInput, List } from 'react-native-paper';
+import { Text, Card, Button, Avatar, Divider, Switch, TextInput, List, IconButton } from 'react-native-paper';
 import { StatusBar } from 'expo-status-bar';
 import { useTheme } from '../context/ThemeContext';
 import { useAuthStore } from '../store/authStore';
@@ -404,6 +404,28 @@ export default function SettingsScreen() {
                             />
                         </View>
                     </Card.Content>
+                </Card>
+
+                {/* Energy Monitor */}
+                <Card style={[styles.card, { backgroundColor: cardBg, borderColor, borderWidth: 1 }]}>
+                    <TouchableOpacity onPress={() => navigation.navigate('EnergyDashboard' as never)}>
+                        <Card.Content>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                                    <Text style={{ fontSize: 28 }}>⚡</Text>
+                                    <View>
+                                        <Text variant="bodyLarge" style={{ color: theme.text, fontWeight: '600' }}>
+                                            Energy Monitor
+                                        </Text>
+                                        <Text style={{ color: theme.textSecondary, fontSize: 14, marginTop: 2 }}>
+                                            Track power consumption
+                                        </Text>
+                                    </View>
+                                </View>
+                                <IconButton icon="chevron-right" size={24} iconColor={theme.textSecondary} />
+                            </View>
+                        </Card.Content>
+                    </TouchableOpacity>
                 </Card>
 
                 {/* System Section */}
