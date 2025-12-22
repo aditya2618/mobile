@@ -1,0 +1,40 @@
+module.exports = {
+    expo: {
+        name: "smart-home",
+        slug: "smart-home",
+        version: "1.0.0",
+        orientation: "portrait",
+        icon: "./assets/icon.png",
+        userInterfaceStyle: "light",
+        newArchEnabled: true,
+        splash: {
+            image: "./assets/splash-icon.png",
+            resizeMode: "contain",
+            backgroundColor: "#ffffff"
+        },
+        ios: {
+            supportsTablet: true
+        },
+        android: {
+            adaptiveIcon: {
+                foregroundImage: "./assets/adaptive-icon.png",
+                backgroundColor: "#ffffff"
+            },
+            edgeToEdgeEnabled: true,
+            predictiveBackGestureEnabled: false,
+            usesCleartextTraffic: true,
+            package: "com.imphal.smarthome"
+        },
+        web: {
+            favicon: "./assets/favicon.png"
+        },
+        plugins: [
+            "./plugins/withNetworkSecurity.js"
+        ],
+        extra: {
+            eas: {
+                projectId: "61878213-68e9-47f6-b8d7-9902dfbccbf4"
+            }
+        }
+    }
+};

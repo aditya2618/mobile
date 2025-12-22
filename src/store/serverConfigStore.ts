@@ -50,10 +50,10 @@ export const useServerConfigStore = create<ServerConfigState>((set, get) => ({
                     isConfigured: true,
                     loading: false
                 });
-                console.log('Server config loaded:', config.serverIp);
+                console.log(`✅ Server config loaded: ${ip}:${port || "8000"}`);
             } else {
                 set({ isConfigured: false, loading: false });
-                console.log('No server config found');
+                console.log('⚠️  No server config found - user needs to configure');
             }
         } catch (error) {
             console.error('Failed to load server config:', error);
@@ -63,9 +63,10 @@ export const useServerConfigStore = create<ServerConfigState>((set, get) => ({
 
     clearServerConfig: async () => {
         try {
-            await AsyncStorage.removeItem(SERVER_CONFIG_KEY);
+            await AsyncStorage.removeItem(SERVER_IP_KEY);
+            await AsyncStorage.removeItem(SERVER_PORT_KEY);
             set({ serverIp: null, serverPort: '8000', isConfigured: false });
-            console.log('Server config cleared');
+            console.log('✅ Server config cleared');
         } catch (error) {
             console.error('Failed to clear server config:', error);
         }
