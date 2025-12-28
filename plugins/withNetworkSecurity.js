@@ -1,6 +1,6 @@
 const { withAndroidManifest } = require('@expo/config-plugins');
 
-module.exports = ({ config }) => {
+module.exports = (config) => {
     return withAndroidManifest(config, async (config) => {
         const androidManifest = config.modResults.manifest;
 

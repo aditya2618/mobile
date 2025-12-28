@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { api } from "../api/client";
+import { smartApi } from "../api/smartClient";
 import { Scene } from "../types/models";
 
 interface SceneState {
@@ -21,12 +22,12 @@ export const useSceneStore = create<SceneState>((set, get) => ({
     loadScenes: async (homeId) => {
         set({ loading: true });
         try {
-            const res = await api.get(`/homes/${homeId}/scenes/`);
-            set({ scenes: res.data, loading: false });
+            const scenes = await smartApi.getScenes(homeId);
+            set({ scenes: scenes, loading: false });
         } catch (error) {
             console.error('Failed to load scenes:', error);
             set({ loading: false });
-            throw error;
+            // throw error; // Don't throw to prevent app crash in cloud mode
         }
     },
 

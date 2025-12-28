@@ -8,7 +8,7 @@ import { useTheme } from "../context/ThemeContext";
 
 export default function HomeBootstrap({ onReady }: { onReady: () => void }) {
     const loadHomes = useHomeStore((s) => s.loadHomes);
-    const activeHome = useHomeStore((s) => s.activeHome);
+    const selectedHome = useHomeStore((s) => s.selectedHome);
     const loadDevices = useDeviceStore((s) => s.loadDevices);
     const loadScenes = useSceneStore((s) => s.loadScenes);
     const { theme, mode } = useTheme();
@@ -45,13 +45,13 @@ export default function HomeBootstrap({ onReady }: { onReady: () => void }) {
     }, []);
 
     useEffect(() => {
-        if (activeHome) {
+        if (selectedHome) {
             (async () => {
                 try {
                     setStatus("Loading devices and scenes...");
                     await Promise.all([
-                        loadDevices(activeHome.id),
-                        loadScenes(activeHome.id)
+                        loadDevices(selectedHome.id),
+                        loadScenes(selectedHome.id)
                     ]);
                     setStatus("Ready!");
                     setTimeout(() => onReady(), 500);
@@ -63,12 +63,12 @@ export default function HomeBootstrap({ onReady }: { onReady: () => void }) {
                 }
             })();
         } else if (useHomeStore.getState().homes.length > 0) {
-            // User has homes but no active home selected
+            // User has homes but no selected home
             // This shouldn't normally happen, but handle it gracefully
-            console.log("No active home selected");
+            console.log("No selected home");
             setTimeout(() => onReady(), 500);
         }
-    }, [activeHome]);
+    }, [selectedHome]);
 
     return (
         <>

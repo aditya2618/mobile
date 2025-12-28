@@ -1,40 +1,100 @@
-import { create } from "zustand";
-import { api } from "../api/client";
-import { Home } from "../types/models";
+/**
+ * Home Selection Store
+ * Manages selected home and available homes
+ */
+import { create } from 'zustand';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-interface HomeState {
-    homes: Home[];
-    activeHome: Home | null;
-
-    loadHomes: () => Promise<void>;
-    createHome: (name: string) => Promise<void>;
-    setActiveHome: (home: Home) => void;
-    reset: () => void;
+interface Home {
+    id: number;
+    name: string;
+    identifier: string;
 }
 
-export const useHomeStore = create<HomeState>((set) => ({
-    homes: [],
-    activeHome: null,
+interface HomeState {
+    selectedHome: Home | null;
+    homes: Home[];
+    loading: boolean;
 
-    loadHomes: async () => {
-        const res = await api.get("homes/");
-        set({
-            homes: res.data,
-            activeHome: res.data[0] ?? null,
-        });
-    },
+    setSelectedHome: (home: Home) => Promise<void>;
+    loadSelectedHome: () => Promise<void>;
+    loadHomes: () => Promise<void>;
+    setHomes: (homes: Home[]) => void;
+    clearSelectedHome: () => Promise<void>;
+    createHome: (name: string) => Promise<void>;
+}
+
+const SELECTED_HOME_KEY = '@selected_home';
+
+export const useHomeStore = create<HomeState>((set, get) => ({
+    selectedHome: null,
+    homes: [],
+    loading: true,
 
     createHome: async (name: string) => {
-        const res = await api.post("homes/", { name });
-        // Reload homes to get the new one
-        const homesRes = await api.get("homes/");
-        set({
-            homes: homesRes.data,
-            activeHome: res.data, // Set the newly created home as active
-        });
+        try {
+            const { apiClient } = require('../api/client');
+            const response = await apiClient.post('/homes/', { name });
+            const newHome = response.data;
+            console.log(`✅ Created home: ${newHome.name}`);
+
+            // Add to homes list
+            const { homes } = get();
+            set({ homes: [...homes, newHome] });
+
+            // Select it if it's the first one
+            if (homes.length === 0) {
+                await get().setSelectedHome(newHome);
+            }
+        } catch (error) {
+            console.error('Failed to create home:', error);
+            throw error;
+        }
     },
 
-    setActiveHome: (home) => set({ activeHome: home }),
+    setSelectedHome: async (home: Home) => {
+        await AsyncStorage.setItem(SELECTED_HOME_KEY, JSON.stringify(home));
+        set({ selectedHome: home });
+        console.log(`✅ Selected home: ${home.name} (ID: ${home.id})`);
+    },
 
-    reset: () => set({ homes: [], activeHome: null }),
+    loadSelectedHome: async () => {
+        try {
+            const homeJson = await AsyncStorage.getItem(SELECTED_HOME_KEY);
+            if (homeJson) {
+                const home = JSON.parse(homeJson);
+                set({ selectedHome: home, loading: false });
+                console.log(`✅ Loaded selected home: ${home.name}`);
+            } else {
+                set({ loading: false });
+                console.log('⚠️ No selected home found');
+            }
+        } catch (error) {
+            console.error('Failed to load selected home:', error);
+            set({ loading: false });
+        }
+    },
+
+    loadHomes: async () => {
+        try {
+            const { apiClient } = require('../api/client');
+            const response = await apiClient.get('/homes/');
+            const homes = response.data;
+            set({ homes });
+            console.log(`✅ Loaded ${homes.length} homes`);
+        } catch (error) {
+            console.error('Error loading homes:', error);
+            set({ homes: [] });
+        }
+    },
+
+    setHomes: (homes: Home[]) => {
+        set({ homes });
+    },
+
+    clearSelectedHome: async () => {
+        await AsyncStorage.removeItem(SELECTED_HOME_KEY);
+        set({ selectedHome: null });
+        console.log('✅ Cleared selected home');
+    },
 }));

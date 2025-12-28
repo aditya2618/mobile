@@ -64,7 +64,12 @@ export default function DHTCard({ entity, device }: DHTCardProps) {
     }
 
     // Individual sensor format (single value)
-    const value = entity.state?.value ?? '--';
+    let value: any = '--';
+    if (entity.state !== null && typeof entity.state === 'object') {
+        value = entity.state.value ?? '--';
+    } else if (entity.state !== undefined && entity.state !== null) {
+        value = entity.state;
+    }
     const unit = entity.unit || '';
 
     // Determine icon and color based on entity name

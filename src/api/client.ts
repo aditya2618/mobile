@@ -37,6 +37,10 @@ apiClient.interceptors.request.use((config) => {
     return Promise.reject(error);
 });
 
+// Export the client
+export { apiClient };
+export default apiClient;
+
 export const api = apiClient;
 
 export const setAuthToken = (token: string | null) => {

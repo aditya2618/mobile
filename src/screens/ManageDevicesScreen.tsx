@@ -5,7 +5,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useDeviceStore } from '../store/deviceStore';
 import { useHomeStore } from '../store/homeStore';
 import { useState, useEffect } from 'react';
-import { api } from '../api/client';
+import { apiClient } from '../api/client';
 
 interface AvailableDevice {
     id: number;
@@ -17,7 +17,7 @@ interface AvailableDevice {
 
 export default function ManageDevicesScreen() {
     const { theme, mode } = useTheme();
-    const activeHome = useHomeStore((s) => s.activeHome);
+    const selectedHome = useHomeStore((s) => s.selectedHome);
     const loadDevices = useDeviceStore((s) => s.loadDevices);
 
     const [availableDevices, setAvailableDevices] = useState<AvailableDevice[]>([]);
@@ -34,11 +34,11 @@ export default function ManageDevicesScreen() {
     }, []);
 
     const loadAvailableDevices = async () => {
-        if (!activeHome) return;
+        if (!selectedHome) return;
 
         try {
             setRefreshing(true);
-            const response = await api.get(`homes/${activeHome.id}/devices/available/`);
+            const response = await apiClient.get(`/homes/${selectedHome.id}/devices/available/`);
             setAvailableDevices(response.data);
         } catch (error) {
             console.error('Failed to load available devices:', error);
@@ -56,16 +56,16 @@ export default function ManageDevicesScreen() {
     };
 
     const handleLinkDevices = async () => {
-        if (!activeHome || selectedDevices.length === 0) return;
+        if (!selectedHome || selectedDevices.length === 0) return;
 
         try {
             setLoading(true);
-            await api.post(`homes/${activeHome.id}/devices/link/`, {
+            await apiClient.post(`/homes/${selectedHome.id}/devices/link/`, {
                 device_ids: selectedDevices
             });
 
             // Reload devices
-            await loadDevices(activeHome.id);
+            await loadDevices(selectedHome.id);
             await loadAvailableDevices();
             setSelectedDevices([]);
         } catch (error: any) {
@@ -86,7 +86,7 @@ export default function ManageDevicesScreen() {
                         Manage Devices
                     </Text>
                     <Text variant="bodyMedium" style={{ color: theme.textSecondary, marginTop: 4 }}>
-                        Select devices to add to {activeHome?.name}
+                        Select devices to add to {selectedHome?.name}
                     </Text>
                 </View>
 

@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import { api, controlEntity as apiControlEntity } from "../api/client";
+import { api } from "../api/client";
+import { smartApi } from "../api/smartClient";
 import { Device } from "../types/models";
 
 interface DeviceState {
@@ -15,12 +16,19 @@ export const useDeviceStore = create<DeviceState>((set) => ({
 
     loadDevices: async (homeId) => {
         console.log('📥 Loading devices for home:', homeId);
-        const res = await api.get(`homes/${homeId}/devices/`);
-        console.log('📥 Devices loaded:', res.data.length, 'devices');
-        set({ devices: res.data });
+        try {
+            const devices = await smartApi.getDevices(homeId);
+            console.log('📥 Devices loaded:', devices.length, 'devices');
+            set({ devices });
+        } catch (error) {
+            console.error('Error loading devices:', error);
+            // Don't clear devices on error to keep cache if available?
+            // set({ devices: [] });
+        }
     },
 
-    updateEntityState: (entityId, state) =>
+    updateEntityState: (entityId, state) => {
+        console.log(`🔄 Store: Updating entity ${entityId} state:`, state);
         set((s) => ({
             devices: s.devices.map((d) => ({
                 ...d,
@@ -28,14 +36,17 @@ export const useDeviceStore = create<DeviceState>((set) => ({
                     e.id === entityId ? { ...e, state } : e
                 ),
             })),
-        })),
+        }));
+    },
 
-    updateDeviceStatus: (deviceId, isOnline) =>
+    updateDeviceStatus: (deviceId, isOnline) => {
+        console.log(`🔄 Store: Updating device ${deviceId} online status:`, isOnline);
         set((s) => ({
             devices: s.devices.map((d) =>
                 d.id === deviceId ? { ...d, is_online: isOnline } : d
             ),
-        })),
+        }));
+    },
 
     controlEntity: async (entityId, command) => {
         try {
@@ -52,7 +63,12 @@ export const useDeviceStore = create<DeviceState>((set) => ({
                 })),
             }));
 
-            await apiControlEntity(entityId, command);
+            // Use smartApi which routes to cloud or local based on network mode
+            // Refresh network mode first to ensure we use the right API
+            await smartApi.refresh();
+            const commandKey = Object.keys(command)[0];
+            const commandValue = command[commandKey];
+            await smartApi.controlEntity(entityId, commandKey, commandValue);
             // WebSocket will update with actual state from device
         } catch (error) {
             console.error('Control failed:', error);

@@ -5,7 +5,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useDeviceStore } from '../store/deviceStore';
 import { useHomeStore } from '../store/homeStore';
 import { useState, useEffect } from 'react';
-import { api } from '../api/client';
+import { apiClient } from '../api/client';
 
 interface HomeDevice {
     id: number;
@@ -17,7 +17,7 @@ interface HomeDevice {
 
 export default function RemoveDevicesScreen() {
     const { theme, mode } = useTheme();
-    const activeHome = useHomeStore((s) => s.activeHome);
+    const selectedHome = useHomeStore((s) => s.selectedHome);
     const devices = useDeviceStore((s) => s.devices);
     const loadDevices = useDeviceStore((s) => s.loadDevices);
 
@@ -30,9 +30,9 @@ export default function RemoveDevicesScreen() {
     const borderColor = isDark ? 'transparent' : 'rgba(0,0,0,0.08)';
 
     const onRefresh = async () => {
-        if (!activeHome) return;
+        if (!selectedHome) return;
         setRefreshing(true);
-        await loadDevices(activeHome.id);
+        await loadDevices(selectedHome.id);
         setRefreshing(false);
     };
 
@@ -45,16 +45,16 @@ export default function RemoveDevicesScreen() {
     };
 
     const handleRemoveDevices = async () => {
-        if (!activeHome || selectedDevices.length === 0) return;
+        if (!selectedHome || selectedDevices.length === 0) return;
 
         try {
             setLoading(true);
-            await api.post(`homes/${activeHome.id}/devices/unlink/`, {
+            await apiClient.post(`/homes/${selectedHome.id}/devices/unlink/`, {
                 device_ids: selectedDevices
             });
 
             // Reload devices
-            await loadDevices(activeHome.id);
+            await loadDevices(selectedHome.id);
             setSelectedDevices([]);
         } catch (error: any) {
             console.error('Failed to remove devices:', error);
@@ -74,7 +74,7 @@ export default function RemoveDevicesScreen() {
                         Remove Devices
                     </Text>
                     <Text variant="bodyMedium" style={{ color: theme.textSecondary, marginTop: 4 }}>
-                        Select devices to remove from {activeHome?.name}
+                        Select devices to remove from {selectedHome?.name}
                     </Text>
                 </View>
 

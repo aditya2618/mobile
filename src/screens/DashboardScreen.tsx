@@ -12,7 +12,7 @@ import { useNavigation } from "@react-navigation/native";
 export default function DashboardScreen() {
     const navigation = useNavigation();
     const devices = useDeviceStore((s) => s.devices);
-    const activeHome = useHomeStore((s) => s.activeHome);
+    const selectedHome = useHomeStore((s) => s.selectedHome);
     const user = useAuthStore((s) => s.user);
     const loadDevices = useDeviceStore((s) => s.loadDevices);
     const controlEntity = useDeviceStore((s) => s.controlEntity);
@@ -21,9 +21,9 @@ export default function DashboardScreen() {
     const [expandedDevices, setExpandedDevices] = useState<Set<number>>(new Set());
 
     const onRefresh = async () => {
-        if (activeHome) {
+        if (selectedHome) {
             setRefreshing(true);
-            await loadDevices(activeHome.id);
+            await loadDevices(selectedHome.id);
             setRefreshing(false);
         }
     };
@@ -71,7 +71,7 @@ export default function DashboardScreen() {
                             {devices.length} device{devices.length !== 1 ? 's' : ''}
                         </Text>
                     </View>
-                    {activeHome && (
+                    {selectedHome && (
                         <View style={styles.headerButtons}>
                             <Button
                                 mode="contained"

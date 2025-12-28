@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { api } from "../api/client";
+import { smartApi } from "../api/smartClient";
 import { Automation } from "../types/models";
 
 interface AutomationState {
@@ -23,9 +24,14 @@ export const useAutomationStore = create<AutomationState>((set, get) => ({
 
     loadAutomations: async (homeId) => {
         console.log('📥 Loading automations for home:', homeId);
-        const res = await api.get(`homes/${homeId}/automations/`);
-        console.log('📥 Automations loaded:', res.data.length, 'automations');
-        set({ automations: res.data });
+        try {
+            const automations = await smartApi.getAutomations(homeId);
+            console.log('📥 Automations loaded:', automations.length, 'automations');
+            set({ automations });
+        } catch (error) {
+            console.error('Failed to load automations (likely not supported in cloud mode):', error);
+            // set({ automations: [] }); // Optional: clear list
+        }
     },
 
     createAutomation: async (homeId, name, triggersData, actionsData, triggerLogic = 'AND', cooldownSeconds = 60) => {

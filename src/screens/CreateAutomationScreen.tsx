@@ -8,15 +8,26 @@ import { useDeviceStore } from '../store/deviceStore';
 import { useSceneStore } from '../store/sceneStore';
 import { useAutomationStore } from '../store/automationStore';
 import { useNavigation } from '@react-navigation/native';
-import AddTriggerModal from '../components/AddTriggerModal';
+import AddTriggerModalV2 from '../components/AddTriggerModalV2';
 import AutomationActionModal from '../components/AutomationActionModal';
 
 interface Trigger {
-    entity: number;
-    entity_name: string;
-    attribute: string;
-    operator: string;
-    value: string;
+    trigger_type: 'state' | 'time' | 'sun';
+
+    // State trigger fields
+    entity?: number;
+    entity_name?: string;
+    attribute?: string;
+    operator?: string;
+    value?: string;
+
+    // Time trigger fields
+    time_of_day?: string;
+    days_of_week?: number[];
+
+    // Sun trigger fields
+    sun_event?: string;
+    sun_offset?: number;
 }
 
 interface Action {
@@ -66,15 +77,8 @@ export default function CreateAutomationScreen() {
         })) || []
     );
 
-    const addTrigger = (entityId: number, entityName: string, attribute: string, operator: string, value: string) => {
-        const newTrigger: Trigger = {
-            entity: entityId,
-            entity_name: entityName,
-            attribute,
-            operator,
-            value
-        };
-        setTriggers([...triggers, newTrigger]);
+    const addTrigger = (trigger: Trigger) => {
+        setTriggers([...triggers, trigger]);
     };
 
     const removeTrigger = (index: number) => {
@@ -124,12 +128,34 @@ export default function CreateAutomationScreen() {
             setSaving(true);
 
             // Prepare triggers data
-            const triggersData = triggers.map(t => ({
-                entity: t.entity,
-                attribute: t.attribute,
-                operator: t.operator,
-                value: t.value
-            }));
+            const triggersData = triggers.map(t => {
+                const base: any = { trigger_type: t.trigger_type };
+
+                if (t.trigger_type === 'time') {
+                    return {
+                        ...base,
+                        time_of_day: t.time_of_day,
+                        days_of_week: t.days_of_week && t.days_of_week.length > 0 ? t.days_of_week : null
+                    };
+                }
+
+                if (t.trigger_type === 'sun') {
+                    return {
+                        ...base,
+                        sun_event: t.sun_event,
+                        sun_offset: t.sun_offset || 0
+                    };
+                }
+
+                // State trigger
+                return {
+                    ...base,
+                    entity: t.entity,
+                    attribute: t.attribute,
+                    operator: t.operator,
+                    value: t.value
+                };
+            });
 
             // Prepare actions data
             const actionsData = actions.map(a => {
@@ -159,7 +185,30 @@ export default function CreateAutomationScreen() {
     };
 
     const getTriggerSummary = (trigger: Trigger) => {
+        if (trigger.trigger_type === 'time') {
+            const days = trigger.days_of_week && trigger.days_of_week.length > 0
+                ? ` on ${formatDays(trigger.days_of_week)}`
+                : ' daily';
+            return `⏰ ${trigger.time_of_day}${days}`;
+        }
+
+        if (trigger.trigger_type === 'sun') {
+            const offset = trigger.sun_offset && trigger.sun_offset !== 0
+                ? ` ${trigger.sun_offset > 0 ? '+' : ''}${trigger.sun_offset}m`
+                : '';
+            return `🌞 ${trigger.sun_event}${offset}`;
+        }
+
+        // State trigger
         return `${trigger.entity_name} ${trigger.attribute} ${trigger.operator} ${trigger.value}`;
+    };
+
+    const formatDays = (days: number[]) => {
+        const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        if (days.length === 7) return 'Every day';
+        if (days.length === 5 && days.every(d => d < 5)) return 'Weekdays';
+        if (days.length === 2 && days.includes(5) && days.includes(6)) return 'Weekends';
+        return days.map(d => dayNames[d]).join(', ');
     };
 
     const getActionSummary = (action: Action) => {
@@ -420,13 +469,10 @@ export default function CreateAutomationScreen() {
                 </ScrollView>
 
                 {/* Modals */}
-                <AddTriggerModal
+                <AddTriggerModalV2
                     visible={showTriggerModal}
-                    entities={allEntities}
-                    onClose={() => setShowTriggerModal(false)}
-                    onAddTrigger={addTrigger}
-                    theme={theme}
-                    isDark={isDark}
+                    onDismiss={() => setShowTriggerModal(false)}
+                    onAdd={addTrigger}
                 />
 
                 <AutomationActionModal

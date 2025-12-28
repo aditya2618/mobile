@@ -1,10 +1,13 @@
-import { View, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
-import { Text, Card, Button, Avatar, Divider, Switch, TextInput, List, IconButton } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, ActivityIndicator } from 'react-native';
+import { Text, Card, Button, Avatar, Divider, Switch, TextInput, List, IconButton, Portal, RadioButton } from 'react-native-paper';
 import { StatusBar } from 'expo-status-bar';
 import { useTheme } from '../context/ThemeContext';
 import { useAuthStore } from '../store/authStore';
-import { useState } from 'react';
+import { useHomeStore } from '../store/homeStore';
+import { useState, useEffect } from 'react';
 import { useNavigation } from '@react-navigation/native';
+import { smartApi } from '../api/smartClient';
+import { getCloudModePreference, setCloudModePreference, getForceCloudPreference, setForceCloudPreference, getNetworkModeLabel, NetworkMode } from '../api/networkMode';
 
 export default function SettingsScreen() {
     const navigation = useNavigation();
@@ -26,6 +29,106 @@ export default function SettingsScreen() {
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [changingPassword, setChangingPassword] = useState(false);
+
+    // Home management state (single home - rename only)
+    const selectedHome = useHomeStore((s) => s.selectedHome);
+    const setSelectedHome = useHomeStore((s) => s.setSelectedHome);
+    const loadHomes = useHomeStore((s) => s.loadHomes);
+    const [isRenamingHome, setIsRenamingHome] = useState(false);
+    const [newHomeName, setNewHomeName] = useState('');
+    const [savingHomeName, setSavingHomeName] = useState(false);
+
+    // Cloud access state
+    const [cloudEnabled, setCloudEnabled] = useState(false);
+    const [forceCloudOnly, setForceCloudOnly] = useState(false);
+    const [togglingCloud, setTogglingCloud] = useState(false);
+    const [currentNetworkMode, setCurrentNetworkMode] = useState<NetworkMode>('local');
+
+    useEffect(() => {
+        loadHomes();
+        loadCloudSettings();
+    }, []);
+
+    const loadCloudSettings = async () => {
+        // Load user's preferences
+        const cloudPref = await getCloudModePreference();
+        const forcePref = await getForceCloudPreference();
+        setCloudEnabled(cloudPref);
+        setForceCloudOnly(forcePref);
+        // Get current actual mode
+        const mode = smartApi.getMode();
+        setCurrentNetworkMode(mode);
+    };
+
+    const handleRenameHome = async () => {
+        if (!newHomeName.trim() || !selectedHome) return;
+        setSavingHomeName(true);
+        try {
+            const { apiClient } = require('../api/client');
+            await apiClient.patch(`/homes/${selectedHome.id}/`, { name: newHomeName.trim() });
+            // Update the selected home with new name
+            setSelectedHome({ ...selectedHome, name: newHomeName.trim() });
+            setIsRenamingHome(false);
+            setNewHomeName('');
+            Alert.alert('Success', 'Home name updated!');
+        } catch (error: any) {
+            console.error('Failed to rename home:', error);
+            Alert.alert('Error', 'Failed to rename home. Please try again.');
+        } finally {
+            setSavingHomeName(false);
+        }
+    };
+
+    const handleCloudToggle = async (value: boolean) => {
+        setTogglingCloud(true);
+        try {
+            // Save preference
+            await setCloudModePreference(value);
+            setCloudEnabled(value);
+
+            // Re-detect network mode with new preference
+            const newMode = await smartApi.refresh();
+            setCurrentNetworkMode(newMode);
+
+            Alert.alert(
+                'Cloud Access',
+                value
+                    ? `Cloud access enabled. Current connection: ${getNetworkModeLabel(newMode)}`
+                    : `Cloud access disabled. Using local connection only.`,
+                [{ text: 'OK' }]
+            );
+        } catch (error) {
+            console.error('Failed to toggle cloud:', error);
+            Alert.alert('Error', 'Failed to update cloud settings.');
+        } finally {
+            setTogglingCloud(false);
+        }
+    };
+
+    const handleForceCloudToggle = async (value: boolean) => {
+        setTogglingCloud(true);
+        try {
+            await setForceCloudPreference(value);
+            setForceCloudOnly(value);
+
+            // Re-detect network mode with new preference
+            const newMode = await smartApi.refresh();
+            setCurrentNetworkMode(newMode);
+
+            Alert.alert(
+                'Force Cloud Only',
+                value
+                    ? `Force Cloud mode enabled. All requests will use cloud server.`
+                    : `Force Cloud disabled. Local server will be preferred when available.`,
+                [{ text: 'OK' }]
+            );
+        } catch (error) {
+            console.error('Failed to toggle force cloud:', error);
+            Alert.alert('Error', 'Failed to update cloud settings.');
+        } finally {
+            setTogglingCloud(false);
+        }
+    };
 
     const isDark = mode === 'dark';
     const cardBg = isDark ? theme.cardBackground : '#FFFFFF';
@@ -403,6 +506,68 @@ export default function SettingsScreen() {
                                 color={theme.primary}
                             />
                         </View>
+
+                        <Divider style={{ marginVertical: 12 }} />
+
+                        {/* Home Name - Rename */}
+                        <TouchableOpacity onPress={() => { setNewHomeName(selectedHome?.name || ''); setIsRenamingHome(true); }}>
+                            <View style={styles.settingRow}>
+                                <View>
+                                    <Text style={{ color: theme.text, fontSize: 16 }}>Home Name</Text>
+                                    <Text style={{ color: theme.textSecondary, fontSize: 14, marginTop: 2 }}>
+                                        {selectedHome?.name || 'My Home'}
+                                    </Text>
+                                </View>
+                                <IconButton icon="pencil" size={24} iconColor={theme.textSecondary} />
+                            </View>
+                        </TouchableOpacity>
+
+                        <Divider style={{ marginVertical: 12 }} />
+
+                        {/* Cloud Access Toggle */}
+                        <View style={styles.settingRow}>
+                            <View style={{ flex: 1 }}>
+                                <Text style={{ color: theme.text, fontSize: 16 }}>Cloud Access</Text>
+                                <Text style={{ color: theme.textSecondary, fontSize: 14, marginTop: 2 }}>
+                                    {cloudEnabled ? 'Enabled' : 'Disabled'} • {getNetworkModeLabel(currentNetworkMode)}
+                                </Text>
+                            </View>
+                            {togglingCloud ? (
+                                <ActivityIndicator size="small" color={theme.primary} style={{ marginRight: 8 }} />
+                            ) : (
+                                <Switch
+                                    value={cloudEnabled}
+                                    onValueChange={handleCloudToggle}
+                                    color={theme.primary}
+                                    disabled={togglingCloud}
+                                />
+                            )}
+                        </View>
+
+                        {/* Force Cloud Only Toggle - only show when cloud is enabled */}
+                        {cloudEnabled && (
+                            <>
+                                <Divider style={{ marginVertical: 12 }} />
+                                <View style={styles.settingRow}>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={{ color: theme.text, fontSize: 16 }}>Force Cloud Only</Text>
+                                        <Text style={{ color: theme.textSecondary, fontSize: 14, marginTop: 2 }}>
+                                            Bypass local server, always use cloud
+                                        </Text>
+                                    </View>
+                                    {togglingCloud ? (
+                                        <ActivityIndicator size="small" color={theme.primary} style={{ marginRight: 8 }} />
+                                    ) : (
+                                        <Switch
+                                            value={forceCloudOnly}
+                                            onValueChange={handleForceCloudToggle}
+                                            color={theme.primary}
+                                            disabled={togglingCloud}
+                                        />
+                                    )}
+                                </View>
+                            </>
+                        )}
                     </Card.Content>
                 </Card>
 
@@ -504,6 +669,62 @@ export default function SettingsScreen() {
                 </Button>
 
                 <View style={{ height: 40 }} />
+
+                {/* Home Rename Modal */}
+                <Portal>
+                    <Modal
+                        visible={isRenamingHome}
+                        transparent
+                        animationType="fade"
+                        onRequestClose={() => setIsRenamingHome(false)}
+                    >
+                        <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.5)' }]}>
+                            <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
+                                <Text variant="titleLarge" style={{ color: theme.text, fontWeight: 'bold', marginBottom: 16 }}>
+                                    Rename Home
+                                </Text>
+                                <TextInput
+                                    value={newHomeName}
+                                    onChangeText={setNewHomeName}
+                                    mode="outlined"
+                                    label="Home Name"
+                                    style={{ marginBottom: 16 }}
+                                    theme={{
+                                        colors: {
+                                            onSurfaceVariant: theme.textSecondary,
+                                            onSurface: theme.text,
+                                            outline: theme.border,
+                                            primary: theme.primary,
+                                            background: cardBg,
+                                        }
+                                    }}
+                                    textColor={theme.text}
+                                />
+                                <View style={{ flexDirection: 'row', gap: 12 }}>
+                                    <Button
+                                        mode="outlined"
+                                        onPress={() => setIsRenamingHome(false)}
+                                        style={{ flex: 1 }}
+                                        textColor={theme.textSecondary}
+                                        disabled={savingHomeName}
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        mode="contained"
+                                        onPress={handleRenameHome}
+                                        style={{ flex: 1 }}
+                                        buttonColor={theme.primary}
+                                        loading={savingHomeName}
+                                        disabled={savingHomeName || !newHomeName.trim()}
+                                    >
+                                        Save
+                                    </Button>
+                                </View>
+                            </View>
+                        </View>
+                    </Modal>
+                </Portal>
             </ScrollView>
         </>
     );
@@ -576,6 +797,25 @@ const styles = StyleSheet.create({
     logoutButton: {
         marginHorizontal: 16,
         marginTop: 8,
+    },
+    modalOverlay: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    modalContent: {
+        width: '100%',
+        maxWidth: 400,
+        padding: 24,
+        borderRadius: 16,
+    },
+    homeItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        borderRadius: 12,
+        marginBottom: 8,
         paddingVertical: 6,
     },
 });

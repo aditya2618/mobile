@@ -17,7 +17,8 @@ export default function App() {
   const isLoading = useAuthStore((s) => s.isLoading);
   const restoreSession = useAuthStore((s) => s.restoreSession);
   const token = useAuthStore((s) => s.token);
-  const activeHome = useHomeStore((s) => s.activeHome);
+  const selectedHome = useHomeStore((s) => s.selectedHome);
+  const loadSelectedHome = useHomeStore((s) => s.loadSelectedHome);
   const updateEntityState = useDeviceStore((s) => s.updateEntityState);
   const updateDeviceStatus = useDeviceStore((s) => s.updateDeviceStatus);
   const loadServerConfig = useServerConfigStore((s) => s.loadServerConfig);
@@ -25,11 +26,13 @@ export default function App() {
   const [ready, setReady] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
 
-  // Load server config first, then restore session
+  // Load server config, home, then restore session
   useEffect(() => {
     const initialize = async () => {
       // Load server config first
       await loadServerConfig();
+      // Load selected home from storage
+      await loadSelectedHome();
       // Then restore auth session
       await restoreSession();
     };
@@ -38,7 +41,7 @@ export default function App() {
 
   // Connect to WebSocket when authenticated and home is loaded
   useEffect(() => {
-    if (isAuthenticated && ready && activeHome && token) {
+    if (isAuthenticated && ready && selectedHome && token) {
       console.log("Connecting to WebSocket from App.tsx");
 
       // Set WebSocket URL from server config
@@ -47,14 +50,20 @@ export default function App() {
         console.log("Setting WebSocket URL:", wsUrl);
         wsClient.setUrl(wsUrl);
 
-        wsClient.connect(token, activeHome.id, (data) => {
+        wsClient.connect(token, selectedHome.id, (data) => {
           console.log("WebSocket update received:", data);
 
-          // Handle different message types
+          // Handle entity state updates
           if (data.type === "entity_state" && data.entity_id && data.state) {
             updateEntityState(data.entity_id, data.state);
-          } else if (data.type === "device_status" && data.device_id !== undefined) {
-            // Handle device online/offline status updates
+
+            // Also update device online status if provided
+            if (data.device_id !== undefined && data.is_online !== undefined) {
+              updateDeviceStatus(data.device_id, data.is_online);
+            }
+          }
+          // Handle device status updates (e.g. from LWT)
+          else if (data.type === "device_status" && data.device_id !== undefined) {
             updateDeviceStatus(data.device_id, data.is_online);
             console.log(`📡 Device ${data.device_id} is now ${data.is_online ? 'ONLINE ✅' : 'OFFLINE ❌'}`);
           }
@@ -69,7 +78,7 @@ export default function App() {
         wsClient.disconnect();
       };
     }
-  }, [isAuthenticated, ready, activeHome, token]);
+  }, [isAuthenticated, ready, selectedHome, token]);
 
   // Show loading screen while checking for saved session
   if (isLoading) {
