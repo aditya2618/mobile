@@ -12,7 +12,7 @@ import { useCallback } from 'react';
 export default function AutomationsScreen() {
     const navigation = useNavigation();
     const { theme, mode } = useTheme();
-    const activeHome = useHomeStore((s) => s.activeHome);
+    const selectedHome = useHomeStore((s) => s.selectedHome);
     // Fix: Use separate selectors for reactive state updates
     const automations = useAutomationStore((s) => s.automations);
     const loadAutomations = useAutomationStore((s) => s.loadAutomations);
@@ -25,18 +25,18 @@ export default function AutomationsScreen() {
     const borderColor = isDark ? 'transparent' : 'rgba(0,0,0,0.08)';
 
     useEffect(() => {
-        if (activeHome) {
-            loadAutomations(activeHome.id);
+        if (selectedHome) {
+            loadAutomations(selectedHome.id);
         }
-    }, [activeHome]);
+    }, [selectedHome]);
 
     // Reload automations when screen is focused
     useFocusEffect(
         useCallback(() => {
-            if (activeHome) {
-                loadAutomations(activeHome.id);
+            if (selectedHome) {
+                loadAutomations(selectedHome.id);
             }
-        }, [activeHome])
+        }, [selectedHome])
     );
 
     const handleToggle = async (id: number) => {
@@ -118,7 +118,7 @@ export default function AutomationsScreen() {
                             {automations.length} automation{automations.length !== 1 ? 's' : ''}
                         </Text>
                     </View>
-                    {activeHome && (
+                    {selectedHome && (
                         <Button
                             mode="contained"
                             onPress={handleCreate}
@@ -132,7 +132,7 @@ export default function AutomationsScreen() {
 
                 {/* Content */}
                 <ScrollView style={styles.content}>
-                    {!activeHome ? (
+                    {!selectedHome ? (
                         <View style={{ paddingVertical: 60, alignItems: 'center' }}>
                             <Text style={{ fontSize: 48, marginBottom: 16 }}>🏠</Text>
                             <Text variant="titleMedium" style={{ color: theme.text, marginBottom: 8 }}>

@@ -10,7 +10,7 @@ import { useNavigation } from '@react-navigation/native';
 export default function EnergyDashboardScreen() {
     const { theme, mode } = useTheme();
     const navigation = useNavigation();
-    const activeHome = useHomeStore((s) => s.activeHome);
+    const selectedHome = useHomeStore((s) => s.selectedHome);
     const { energyData, loading, loadEnergyData } = useEnergyStore();
     const [refreshing, setRefreshing] = useState(false);
 
@@ -18,15 +18,15 @@ export default function EnergyDashboardScreen() {
     const cardBg = isDark ? theme.cardBackground : '#FFFFFF';
 
     useEffect(() => {
-        if (activeHome) {
-            loadEnergyData(activeHome.id);
+        if (selectedHome) {
+            loadEnergyData(selectedHome.id);
         }
-    }, [activeHome]);
+    }, [selectedHome]);
 
     const handleRefresh = async () => {
-        if (!activeHome) return;
+        if (!selectedHome) return;
         setRefreshing(true);
-        await loadEnergyData(activeHome.id);
+        await loadEnergyData(selectedHome.id);
         setRefreshing(false);
     };
 

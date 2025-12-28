@@ -11,7 +11,7 @@ import { wsClient } from '../api/websocket';
 export default function SystemStatusScreen() {
     const { theme, mode } = useTheme();
     const homes = useHomeStore((s) => s.homes);
-    const activeHome = useHomeStore((s) => s.activeHome);
+    const selectedHome = useHomeStore((s) => s.selectedHome);
     const devices = useDeviceStore((s) => s.devices);
     const loadDevices = useDeviceStore((s) => s.loadDevices);
     const user = useAuthStore((s) => s.user);
@@ -58,8 +58,8 @@ export default function SystemStatusScreen() {
         setWsConnected(isConnected);
 
         await testApiConnection();
-        if (activeHome) {
-            await loadDevices(activeHome.id);
+        if (selectedHome) {
+            await loadDevices(selectedHome.id);
         }
         setRefreshing(false);
     };
@@ -260,7 +260,7 @@ export default function SystemStatusScreen() {
                                         Active Home
                                     </Text>
                                     <Text variant="bodyMedium" style={{ color: theme.text, fontWeight: '600' }}>
-                                        {activeHome?.name || 'None'}
+                                        {selectedHome?.name || 'None'}
                                     </Text>
                                 </View>
 

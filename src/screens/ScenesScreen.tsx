@@ -14,7 +14,7 @@ export default function ScenesScreen() {
     const runScene = useSceneStore((s) => s.runScene);
     const deleteScene = useSceneStore((s) => s.deleteScene);
     const createScene = useSceneStore((s) => s.createScene);
-    const activeHome = useHomeStore((s) => s.activeHome);
+    const selectedHome = useHomeStore((s) => s.selectedHome);
     const { theme, mode } = useTheme();
 
     const [refreshing, setRefreshing] = useState(false);
@@ -67,7 +67,7 @@ export default function ScenesScreen() {
                     text: 'Duplicate',
                     onPress: async () => {
                         try {
-                            if (!activeHome) return;
+                            if (!selectedHome) return;
 
                             const actionsData = scene.actions?.map(a => ({
                                 entity: a.entity,
@@ -75,7 +75,7 @@ export default function ScenesScreen() {
                                 order: a.order
                             })) || [];
 
-                            await createScene(activeHome.id, `${scene.name} (Copy)`, actionsData);
+                            await createScene(selectedHome.id, `${scene.name} (Copy)`, actionsData);
                             Alert.alert('Success', 'Scene duplicated successfully!');
                         } catch (error) {
                             console.error('Failed to duplicate scene:', error);

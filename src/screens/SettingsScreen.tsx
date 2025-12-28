@@ -86,7 +86,10 @@ export default function SettingsScreen() {
             await setCloudModePreference(value);
             setCloudEnabled(value);
 
-            // Re-detect network mode with new preference
+            // Set home ID and re-detect network mode
+            if (selectedHome) {
+                smartApi.setHomeId(selectedHome.id.toString());
+            }
             const newMode = await smartApi.refresh();
             setCurrentNetworkMode(newMode);
 
@@ -111,7 +114,10 @@ export default function SettingsScreen() {
             await setForceCloudPreference(value);
             setForceCloudOnly(value);
 
-            // Re-detect network mode with new preference
+            // Set home ID and re-detect network mode
+            if (selectedHome) {
+                smartApi.setHomeId(selectedHome.id.toString());
+            }
             const newMode = await smartApi.refresh();
             setCurrentNetworkMode(newMode);
 

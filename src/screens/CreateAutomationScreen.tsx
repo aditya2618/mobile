@@ -42,7 +42,7 @@ interface Action {
 export default function CreateAutomationScreen() {
     const navigation = useNavigation();
     const { theme, mode } = useTheme();
-    const activeHome = useHomeStore((s) => s.activeHome);
+    const selectedHome = useHomeStore((s) => s.selectedHome);
     const devices = useDeviceStore((s) => s.devices);
     const loadDevices = useDeviceStore((s) => s.loadDevices);
     const scenes = useSceneStore((s) => s.scenes);
@@ -63,10 +63,10 @@ export default function CreateAutomationScreen() {
 
     // Load devices when component mounts
     useEffect(() => {
-        if (activeHome) {
-            loadDevices(activeHome.id);
+        if (selectedHome) {
+            loadDevices(selectedHome.id);
         }
-    }, [activeHome]);
+    }, [selectedHome]);
 
     // Get all entities
     const allEntities = devices.flatMap(device =>
@@ -119,7 +119,7 @@ export default function CreateAutomationScreen() {
             return;
         }
 
-        if (!activeHome) {
+        if (!selectedHome) {
             Alert.alert('Error', 'No active home selected');
             return;
         }
@@ -167,7 +167,7 @@ export default function CreateAutomationScreen() {
             });
 
             await createAutomation(
-                activeHome.id,
+                selectedHome.id,
                 automationName,
                 triggersData,
                 actionsData,

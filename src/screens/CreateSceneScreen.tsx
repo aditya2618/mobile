@@ -21,7 +21,7 @@ export default function CreateSceneScreen() {
     const navigation = useNavigation();
     const route = useRoute();
     const { theme, mode } = useTheme();
-    const activeHome = useHomeStore((s) => s.activeHome);
+    const selectedHome = useHomeStore((s) => s.selectedHome);
     const devices = useDeviceStore((s) => s.devices);
     const { scenes, createScene, updateScene } = useSceneStore();
 
@@ -150,7 +150,7 @@ export default function CreateSceneScreen() {
             return;
         }
 
-        if (!activeHome) {
+        if (!selectedHome) {
             Alert.alert('Error', 'No active home selected');
             return;
         }
@@ -158,7 +158,7 @@ export default function CreateSceneScreen() {
         console.log('=== SAVE SCENE DEBUG ===');
         console.log('Mode:', isEditMode ? 'EDIT' : 'CREATE');
         console.log('Scene ID:', sceneId);
-        console.log('Active Home ID:', activeHome.id);
+        console.log('Active Home ID:', selectedHome.id);
         console.log('Scene Name:', `${selectedIcon} ${sceneName}`);
         console.log('Actions Count:', actions.length);
 
@@ -181,7 +181,7 @@ export default function CreateSceneScreen() {
                 ]);
             } else {
                 // Create new scene
-                await createScene(activeHome.id, `${selectedIcon} ${sceneName}`, actionsData);
+                await createScene(selectedHome.id, `${selectedIcon} ${sceneName}`, actionsData);
                 console.log('✅ Scene created successfully!');
                 Alert.alert('Success', 'Scene created successfully!', [
                     { text: 'OK', onPress: () => navigation.goBack() }

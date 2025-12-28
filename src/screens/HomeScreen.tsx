@@ -1,16 +1,18 @@
 import { View, StyleSheet, ScrollView } from 'react-native';
-import { Text, Card, Button, TextInput } from 'react-native-paper';
+import { Text, Card, Button, TextInput, Icon } from 'react-native-paper';
 import { StatusBar } from 'expo-status-bar';
 import { useTheme } from '../context/ThemeContext';
 import { useDeviceStore } from '../store/deviceStore';
 import { useHomeStore } from '../store/homeStore';
 import { useAuthStore } from '../store/authStore';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { smartApi } from '../api/smartClient';
+import { NetworkMode, getNetworkModeLabel, getNetworkModeColor } from '../api/networkMode';
 
 export default function HomeScreen() {
     const { theme, mode } = useTheme();
     const devices = useDeviceStore((s) => s.devices);
-    const activeHome = useHomeStore((s) => s.activeHome);
+    const selectedHome = useHomeStore((s) => s.selectedHome);
     const homes = useHomeStore((s) => s.homes);
     const user = useAuthStore((s) => s.user);
     const createHome = useHomeStore((s) => s.createHome);
@@ -19,6 +21,19 @@ export default function HomeScreen() {
     const [homeName, setHomeName] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [networkMode, setNetworkMode] = useState<NetworkMode>('local');
+
+    useEffect(() => {
+        // Get current network mode
+        setNetworkMode(smartApi.getMode());
+
+        // Poll for network mode changes every 5 seconds
+        const interval = setInterval(() => {
+            setNetworkMode(smartApi.getMode());
+        }, 5000);
+
+        return () => clearInterval(interval);
+    }, []);
 
     const isDark = mode === 'dark';
 
@@ -148,7 +163,7 @@ export default function HomeScreen() {
         0
     );
 
-    const cardBg = isDark ? theme.card : '#FFFFFF';
+    const cardBg = isDark ? theme.cardBackground : '#FFFFFF';
     const borderColor = isDark ? 'transparent' : 'rgba(0,0,0,0.08)';
 
     return (
@@ -161,9 +176,31 @@ export default function HomeScreen() {
                         Welcome, {user?.username || 'User'}
                     </Text>
                     <Text variant="bodyLarge" style={{ color: theme.textSecondary, marginTop: 4 }}>
-                        {activeHome?.name || 'Smart Home'}
+                        {selectedHome?.name || 'Smart Home'}
                     </Text>
                 </View>
+
+                {/* Connection Status Card */}
+                <Card style={[
+                    styles.connectionCard,
+                    {
+                        backgroundColor: networkMode === 'cloud' ? '#2196F3' : networkMode === 'local' ? '#4CAF50' : '#FFC107',
+                        borderWidth: 0,
+                    }
+                ]}>
+                    <Card.Content style={styles.connectionCardContent}>
+                        <Icon
+                            source={networkMode === 'cloud' ? 'cloud' : networkMode === 'local' ? 'home' : 'wifi-off'}
+                            size={24}
+                            color="#FFFFFF"
+                        />
+                        <View style={{ marginLeft: 12 }}>
+                            <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: 'bold', textAlign: 'center' }}>
+                                {networkMode === 'cloud' ? 'Connected to Cloud Network' : networkMode === 'local' ? 'Connected to Local Network' : 'Offline'}
+                            </Text>
+                        </View>
+                    </Card.Content>
+                </Card>
 
                 {/* Stats Grid */}
                 <View style={styles.statsGrid}>
@@ -212,7 +249,7 @@ export default function HomeScreen() {
                         </View>
                         <View style={[styles.statusRow, { borderBottomWidth: 0 }]}>
                             <Text style={{ color: theme.textSecondary }}>🏠 Home</Text>
-                            <Text style={{ color: theme.text, fontWeight: '600' }}>{activeHome?.name || 'N/A'}</Text>
+                            <Text style={{ color: theme.text, fontWeight: '600' }}>{selectedHome?.name || 'N/A'}</Text>
                         </View>
                     </Card.Content>
                 </Card>
@@ -241,6 +278,35 @@ const styles = StyleSheet.create({
     header: {
         padding: 20,
         paddingTop: 60,
+        paddingBottom: 12,
+    },
+    connectionRow: {
+        paddingHorizontal: 20,
+        marginBottom: 12,
+    },
+    connectionCard: {
+        marginHorizontal: 16,
+        marginBottom: 16,
+        borderRadius: 16,
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 4,
+    },
+    connectionCardContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 8,
+        paddingHorizontal: 4,
+    },
+    connectionChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 20,
+        alignSelf: 'flex-start',
     },
     statsGrid: {
         flexDirection: 'row',

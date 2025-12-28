@@ -9,7 +9,7 @@ import { api } from '../api/client';
 export default function LocationSettingsScreen() {
     const navigation = useNavigation();
     const { theme, mode } = useTheme();
-    const activeHome = useHomeStore(s => s.activeHome);
+    const selectedHome = useHomeStore(s => s.selectedHome);
 
     const [latitude, setLatitude] = useState('');
     const [longitude, setLongitude] = useState('');
@@ -25,15 +25,16 @@ export default function LocationSettingsScreen() {
 
     useEffect(() => {
         loadLocation();
-    }, [activeHome]);
+    }, [selectedHome]);
 
     const loadLocation = async () => {
-        if (!activeHome) return;
+        if (!selectedHome) return; // Changed activeHome to selectedHome
 
         setLoading(true);
         try {
+            const { apiClient } = require('../api/client'); // Introduced apiClient here as per instruction
             // Fetch home details which now include location
-            const response = await api.get(`/homes/${activeHome.id}/`);
+            const response = await apiClient.get(`/homes/${selectedHome.id}/`); // Changed api to apiClient and activeHome to selectedHome
             const home = response.data;
 
             if (home.latitude) setLatitude(home.latitude.toString());
@@ -49,7 +50,7 @@ export default function LocationSettingsScreen() {
     };
 
     const handleSave = async () => {
-        if (!activeHome) return;
+        if (!selectedHome) return;
 
         // Basic validation
         const lat = parseFloat(latitude);
@@ -70,7 +71,8 @@ export default function LocationSettingsScreen() {
 
         setSaving(true);
         try {
-            await api.put(`/homes/${activeHome.id}/location/`, {
+            const { apiClient } = require('../api/client');
+            await apiClient.put(`/homes/${selectedHome.id}/location/`, {
                 latitude: lat,
                 longitude: lon,
                 timezone: timezone.trim(),
@@ -91,7 +93,7 @@ export default function LocationSettingsScreen() {
         Alert.alert('Coming Soon', 'Automatic location detection will be available in a future update. Please enter coordinates manually for now.');
     };
 
-    if (!activeHome) {
+    if (!selectedHome) {
         return (
             <View style={[styles.container, { backgroundColor: theme.background, justifyContent: 'center', alignItems: 'center' }]}>
                 <Text style={{ color: theme.text }}>No active home selected</Text>
