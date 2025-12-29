@@ -1,4 +1,4 @@
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Text, Card, Button, TextInput, Icon } from 'react-native-paper';
 import { StatusBar } from 'expo-status-bar';
 import { useTheme } from '../context/ThemeContext';
@@ -8,8 +8,10 @@ import { useAuthStore } from '../store/authStore';
 import { useState, useEffect } from 'react';
 import { smartApi } from '../api/smartClient';
 import { NetworkMode, getNetworkModeLabel, getNetworkModeColor } from '../api/networkMode';
+import { useNavigation } from '@react-navigation/native';
 
 export default function HomeScreen() {
+    const navigation = useNavigation();
     const { theme, mode } = useTheme();
     const devices = useDeviceStore((s) => s.devices);
     const selectedHome = useHomeStore((s) => s.selectedHome);
@@ -172,12 +174,22 @@ export default function HomeScreen() {
             <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
                 {/* Header */}
                 <View style={styles.header}>
-                    <Text variant="titleLarge" style={{ color: theme.text, fontWeight: 'bold' }}>
-                        Welcome, {user?.username || 'User'}
-                    </Text>
-                    <Text variant="bodyLarge" style={{ color: theme.textSecondary, marginTop: 4 }}>
-                        {selectedHome?.name || 'Smart Home'}
-                    </Text>
+                    <View style={{ flex: 1 }}>
+                        <Text variant="titleLarge" style={{ color: theme.text, fontWeight: 'bold' }}>
+                            Welcome, {user?.username || 'User'}
+                        </Text>
+                        <Text variant="bodyLarge" style={{ color: theme.textSecondary, marginTop: 4 }}>
+                            {selectedHome?.name || 'Smart Home'}
+                        </Text>
+                    </View>
+                    {/* Voice Command Button */}
+                    <TouchableOpacity
+                        style={[styles.voiceButton, { backgroundColor: theme.primary }]}
+                        onPress={() => (navigation as any).navigate('VoiceCommand')}
+                        activeOpacity={0.8}
+                    >
+                        <Icon source="microphone" size={24} color="#FFFFFF" />
+                    </TouchableOpacity>
                 </View>
 
                 {/* Connection Status Card */}
@@ -276,9 +288,23 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     header: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
         padding: 20,
         paddingTop: 60,
         paddingBottom: 12,
+    },
+    voiceButton: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
+        elevation: 3,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 3,
     },
     connectionRow: {
         paddingHorizontal: 20,

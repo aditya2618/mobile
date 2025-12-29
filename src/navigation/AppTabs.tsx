@@ -14,13 +14,25 @@ import LogsScreen from "../screens/LogsScreen";
 import EnergyDashboardScreen from "../screens/EnergyDashboardScreen";
 import CreateSceneScreen from "../screens/CreateSceneScreen";
 import EditSceneScreen from "../screens/EditSceneScreen";
+import VoiceCommandScreen from "../screens/VoiceCommandScreen";
 import { useTheme } from "../context/ThemeContext";
 
 const Tab = createBottomTabNavigator();
+const HomeStack = createNativeStackNavigator();
 const DashboardStack = createNativeStackNavigator();
 const ScenesStack = createNativeStackNavigator();
 const AutomationsStack = createNativeStackNavigator();
 const SettingsStack = createNativeStackNavigator();
+
+// Home Stack Navigator
+function HomeStackScreen() {
+    return (
+        <HomeStack.Navigator screenOptions={{ headerShown: false }}>
+            <HomeStack.Screen name="HomeMain" component={HomeScreen} />
+            <HomeStack.Screen name="VoiceCommand" component={VoiceCommandScreen} />
+        </HomeStack.Navigator>
+    );
+}
 
 // Dashboard Stack Navigator
 function DashboardStackScreen() {
@@ -115,7 +127,7 @@ export default function AppTabs() {
         >
             <Tab.Screen
                 name="Home"
-                component={HomeScreen}
+                component={HomeStackScreen}
                 options={{
                     tabBarIcon: ({ color, size }) => (
                         <Icon source="home" size={size} color={color} />
