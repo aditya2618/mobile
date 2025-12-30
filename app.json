@@ -7,6 +7,24 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "plugins": [
+      "./plugins/withNetworkSecurity",
+      "./plugins/withAndroidXFix",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableJetifier": true,
+            "extraMavenRepos": [],
+            "packagingOptions": {
+              "exclude": [
+                "META-INF/DEPENDENCIES"
+              ]
+            }
+          }
+        }
+      ]
+    ],
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -22,8 +40,11 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "networkSecurityConfig": "@xml/network_security_config",
-      "package": "com.imphal.smarthome"
+      "package": "com.imphal.smarthome",
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.NFC"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"

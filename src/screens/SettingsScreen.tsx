@@ -641,6 +641,25 @@ export default function SettingsScreen() {
                                 <Text style={{ color: theme.textSecondary, fontSize: 20 }}>›</Text>
                             </View>
                         </TouchableOpacity>
+
+                        <Divider style={{ marginVertical: 8 }} />
+
+                        <TouchableOpacity onPress={() => navigation.navigate('NFCSettings' as never)}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8 }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                                    <Text style={{ fontSize: 24 }}>🏷️</Text>
+                                    <View>
+                                        <Text variant="bodyLarge" style={{ color: theme.text, fontWeight: '500' }}>
+                                            NFC Tags
+                                        </Text>
+                                        <Text variant="bodySmall" style={{ color: theme.textSecondary, marginTop: 2 }}>
+                                            Tap NFC tags to activate scenes
+                                        </Text>
+                                    </View>
+                                </View>
+                                <Text style={{ color: theme.textSecondary, fontSize: 20 }}>›</Text>
+                            </View>
+                        </TouchableOpacity>
                     </Card.Content>
                 </Card>
 

@@ -15,6 +15,7 @@ import EnergyDashboardScreen from "../screens/EnergyDashboardScreen";
 import CreateSceneScreen from "../screens/CreateSceneScreen";
 import EditSceneScreen from "../screens/EditSceneScreen";
 import VoiceCommandScreen from "../screens/VoiceCommandScreen";
+import NFCSettingsScreen from "../screens/NFCSettingsScreen";
 import { useTheme } from "../context/ThemeContext";
 
 const Tab = createBottomTabNavigator();
@@ -97,6 +98,10 @@ function SettingsStackScreen() {
             <SettingsStack.Screen
                 name="EnergyDashboard"
                 component={EnergyDashboardScreen}
+            />
+            <SettingsStack.Screen
+                name="NFCSettings"
+                component={NFCSettingsScreen}
             />
         </SettingsStack.Navigator>
     );
