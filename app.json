@@ -9,7 +9,6 @@
     "newArchEnabled": true,
     "plugins": [
       "./plugins/withNetworkSecurity",
-      "./plugins/withAndroidXFix",
       [
         "expo-build-properties",
         {

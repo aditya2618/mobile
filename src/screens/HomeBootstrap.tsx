@@ -34,6 +34,9 @@ export default function HomeBootstrap({ onReady }: { onReady: () => void }) {
 
                 // User has homes - continue normal flow
                 setStatus("Home loaded!");
+
+                // Auto-proceed to dashboard - the home will be selected automatically by homeStore
+                setTimeout(() => onReady(), 500);
             } catch (err: any) {
                 console.error("Error loading homes:", err);
                 // Even if loading fails, proceed to dashboard
