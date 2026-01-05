@@ -8,6 +8,9 @@ import { useState, useEffect } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { smartApi } from '../api/smartClient';
 import { getCloudModePreference, setCloudModePreference, getForceCloudPreference, setForceCloudPreference, getNetworkModeLabel, NetworkMode } from '../api/networkMode';
+import { wsClient } from '../api/websocket';
+import { useServerConfigStore } from '../store/serverConfigStore';
+import { useDeviceStore } from '../store/deviceStore';
 
 export default function SettingsScreen() {
     const navigation = useNavigation();
@@ -120,6 +123,37 @@ export default function SettingsScreen() {
             }
             const newMode = await smartApi.refresh();
             setCurrentNetworkMode(newMode);
+
+            // Disconnect existing WebSocket
+            wsClient.disconnect();
+            console.log('🔌 Disconnecting WebSocket for mode change...');
+
+            // If force cloud enabled, set cloud mode on WebSocket
+            if (value && newMode === 'cloud') {
+                const cloudUrl = 'https://35.209.239.164'; // Your cloud URL
+                wsClient.setCloudMode(true, cloudUrl);
+                console.log('☁️ WebSocket switched to cloud mode');
+            } else {
+                wsClient.setCloudMode(false);
+                console.log('🏠 WebSocket switched to local mode');
+            }
+
+            // Reconnect WebSocket with new mode
+            const token = useAuthStore.getState().token;
+            if (token && selectedHome) {
+                const wsUrl = useServerConfigStore.getState().getWebSocketUrl();
+                if (wsUrl) {
+                    wsClient.setUrl(wsUrl);
+                }
+                wsClient.connect(token, selectedHome.id, (data: any) => {
+                    if (data.type === 'entity_state') {
+                        useDeviceStore.getState().updateEntityState(data.entity_id, data.state);
+                    } else if (data.type === 'device_status') {
+                        useDeviceStore.getState().updateDeviceStatus(data.device_id, data.is_online);
+                    }
+                });
+                console.log('✅ WebSocket reconnected with new mode');
+            }
 
             Alert.alert(
                 'Force Cloud Only',

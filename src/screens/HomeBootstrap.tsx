@@ -32,10 +32,16 @@ export default function HomeBootstrap({ onReady }: { onReady: () => void }) {
                     return;
                 }
 
-                // User has homes - continue normal flow
+                // User has homes - select the first one
                 setStatus("Home loaded!");
 
-                // Auto-proceed to dashboard - the home will be selected automatically by homeStore
+                // CRITICAL FIX: Explicitly select the first home
+                // Without this, selectedHome remains null and WebSocket can't connect
+                const firstHome = homes[0];
+                await useHomeStore.getState().setSelectedHome(firstHome);
+                console.log(`✅ Auto-selected home: ${firstHome.name} (ID: ${firstHome.id})`);
+
+                // Wait for state update, then proceed
                 setTimeout(() => onReady(), 500);
             } catch (err: any) {
                 console.error("Error loading homes:", err);

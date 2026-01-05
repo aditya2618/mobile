@@ -80,6 +80,15 @@ export default function App() {
     }
   }, [isAuthenticated, ready, selectedHome, token]);
 
+  // Reset ready state when user logs out
+  useEffect(() => {
+    if (!isAuthenticated && ready) {
+      console.log("User logged out, resetting ready state...");
+      setReady(false);
+      wsClient.disconnect();
+    }
+  }, [isAuthenticated]);
+
   // Show loading screen while checking for saved session
   if (isLoading) {
     return (
