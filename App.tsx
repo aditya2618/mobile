@@ -11,6 +11,8 @@ import { useDeviceStore } from "./src/store/deviceStore";
 import { useServerConfigStore } from "./src/store/serverConfigStore";
 import { wsClient } from "./src/api/websocket";
 import { ThemeProvider } from "./src/context/ThemeContext";
+// Temporarily disabled - notifee native module not ready
+// import { initBackgroundNfcListener } from "./src/services/backgroundNfcHandler";
 
 export default function App() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -29,12 +31,33 @@ export default function App() {
   // Load server config, home, then restore session
   useEffect(() => {
     const initialize = async () => {
-      // Load server config first
-      await loadServerConfig();
-      // Load selected home from storage
-      await loadSelectedHome();
-      // Then restore auth session
-      await restoreSession();
+      try {
+        console.log('🚀 App initialization started...');
+
+        // Load server config first
+        console.log('📡 Loading server config...');
+        await loadServerConfig();
+        console.log('✅ Server config loaded');
+
+        // Load selected home from storage
+        console.log('🏠 Loading selected home...');
+        await loadSelectedHome();
+        console.log('✅ Selected home loaded');
+
+        // Then restore auth session
+        console.log('🔐 Restoring session...');
+        await restoreSession();
+        console.log('✅ Session restored');
+
+        // Temporarily disabled - notifee native module not ready
+        // Initialize background NFC listener
+        // initBackgroundNfcListener();
+        // console.log('📡 Background NFC handler initialized');
+
+        console.log('✅ App initialization complete!');
+      } catch (error) {
+        console.error('❌ Error during initialization:', error);
+      }
     };
     initialize();
   }, []);

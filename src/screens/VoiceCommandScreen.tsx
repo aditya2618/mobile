@@ -1,10 +1,10 @@
 /**
  * Voice Command Screen
  * Real speech-to-text interface for controlling smart home devices
- * Uses @react-native-voice/voice for actual microphone input
+ * Uses expo-speech-recognition for microphone input
  */
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, Alert, Platform, PermissionsAndroid, ScrollView } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Alert, Platform, ScrollView } from 'react-native';
 import { Text, IconButton, Card, ActivityIndicator } from 'react-native-paper';
 import { StatusBar } from 'expo-status-bar';
 import { useNavigation } from '@react-navigation/native';
@@ -12,7 +12,10 @@ import { useTheme } from '../context/ThemeContext';
 import { useDeviceStore } from '../store/deviceStore';
 import { useSceneStore } from '../store/sceneStore';
 import { useHomeStore } from '../store/homeStore';
-import Voice, { SpeechResultsEvent, SpeechErrorEvent } from '@react-native-voice/voice';
+import {
+    ExpoSpeechRecognitionModule,
+    useSpeechRecognitionEvent,
+} from 'expo-speech-recognition';
 import {
     parseVoiceCommand,
     findMatchingEntity,
@@ -58,93 +61,69 @@ export default function VoiceCommandScreen() {
         })) || []
     );
 
-    // Initialize Voice recognition
+    // Check voice availability on mount
     useEffect(() => {
-        const setupVoice = async () => {
-            try {
-                // Set up Voice event listeners
-                Voice.onSpeechStart = () => {
-                    console.log('🎤 Speech started');
-                    setVoiceState('listening');
-                };
-
-                Voice.onSpeechEnd = () => {
-                    console.log('🎤 Speech ended');
-                };
-
-                Voice.onSpeechResults = (e: SpeechResultsEvent) => {
-                    console.log('🎤 Speech results:', e.value);
-                    if (e.value && e.value.length > 0) {
-                        const spokenText = e.value[0];
-                        setTranscript(spokenText);
-                        processCommand(spokenText);
-                    }
-                };
-
-                Voice.onSpeechPartialResults = (e: SpeechResultsEvent) => {
-                    if (e.value && e.value.length > 0) {
-                        setPartialTranscript(e.value[0]);
-                    }
-                };
-
-                Voice.onSpeechError = (e: SpeechErrorEvent) => {
-                    console.error('🎤 Speech error:', e.error);
-                    setVoiceState('error');
-                    setLastResult({
-                        success: false,
-                        message: getErrorMessage(e.error),
-                    });
-                    setTimeout(() => setVoiceState('idle'), 2000);
-                };
-
-                // Check if voice is available
-                const available = await Voice.isAvailable();
-                setIsVoiceAvailable(available === 1 || available === true);
-                console.log('🎤 Voice available:', available);
-            } catch (error) {
-                console.error('Voice setup error:', error);
-                setIsVoiceAvailable(false);
-            }
+        const checkAvailability = async () => {
+            const status = await ExpoSpeechRecognitionModule.getStateAsync();
+            console.log('🎤 Speech recognition status:', status);
+            setIsVoiceAvailable(status !== 'inactive');
         };
-
-        setupVoice();
-
-        // Cleanup
-        return () => {
-            Voice.destroy().then(Voice.removeAllListeners).catch(() => { });
-        };
+        checkAvailability();
     }, []);
 
-    const getErrorMessage = (error: any): string => {
-        if (!error) return 'Unknown error';
-        const code = error.code || error.message || '';
-        if (code.includes('7') || code.includes('no_match')) return 'No speech detected. Try again.';
-        if (code.includes('9') || code.includes('insufficient')) return 'Permission denied';
-        if (code.includes('network')) return 'Network error';
-        return `Voice error: ${code}`;
-    };
+    // Handle speech recognition events
+    useSpeechRecognitionEvent("start", () => {
+        console.log('🎤 Speech started');
+        setVoiceState('listening');
+    });
 
-    // Request microphone permission (Android)
-    const requestMicrophonePermission = async (): Promise<boolean> => {
-        if (Platform.OS === 'android') {
-            try {
-                const granted = await PermissionsAndroid.request(
-                    PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
-                    {
-                        title: 'Microphone Permission',
-                        message: 'Voice Control needs access to your microphone to hear your commands.',
-                        buttonNeutral: 'Ask Me Later',
-                        buttonNegative: 'Cancel',
-                        buttonPositive: 'OK',
-                    }
-                );
-                return granted === PermissionsAndroid.RESULTS.GRANTED;
-            } catch (err) {
-                console.error('Permission error:', err);
-                return false;
+    useSpeechRecognitionEvent("end", () => {
+        console.log('🎤 Speech ended');
+    });
+
+    useSpeechRecognitionEvent("result", (event) => {
+        console.log('🎤 Speech results:', event.results);
+        if (event.results && event.results.length > 0) {
+            const result = event.results[0];
+            if (result.transcript) {
+                if (event.isFinal) {
+                    setTranscript(result.transcript);
+                    processCommand(result.transcript);
+                } else {
+                    setPartialTranscript(result.transcript);
+                }
             }
         }
-        return true; // iOS handles permissions differently
+    });
+
+    useSpeechRecognitionEvent("error", (event) => {
+        console.error('🎤 Speech error:', event.error);
+        setVoiceState('error');
+        setLastResult({
+            success: false,
+            message: getErrorMessage(event.error),
+        });
+        setTimeout(() => setVoiceState('idle'), 2000);
+    });
+
+    const getErrorMessage = (error: string): string => {
+        if (error.includes('no-speech') || error.includes('no_match')) return 'No speech detected. Try again.';
+        if (error.includes('not-allowed') || error.includes('permission')) return 'Permission denied';
+        if (error.includes('network')) return 'Network error';
+        if (error.includes('not-available')) return 'Speech recognition not available';
+        return `Voice error: ${error}`;
+    };
+
+    // Request microphone permission
+    const requestMicrophonePermission = async (): Promise<boolean> => {
+        try {
+            const result = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+            console.log('🎤 Permission result:', result);
+            return result.granted;
+        } catch (err) {
+            console.error('Permission error:', err);
+            return false;
+        }
     };
 
     // Execute the parsed command
@@ -239,25 +218,24 @@ export default function VoiceCommandScreen() {
             return;
         }
 
-        if (!isVoiceAvailable) {
-            Alert.alert('Voice Not Available', 'Speech recognition is not available on this device.');
-            return;
-        }
-
         try {
             setVoiceState('listening');
             setTranscript('');
             setPartialTranscript('');
             setLastResult(null);
 
-            await Voice.start('en-US');
+            ExpoSpeechRecognitionModule.start({
+                lang: 'en-US',
+                interimResults: true,
+                continuous: false,
+            });
             console.log('🎤 Voice recognition started');
         } catch (error: any) {
             console.error('🎤 Failed to start voice:', error);
             setVoiceState('error');
             setLastResult({
                 success: false,
-                message: 'Failed to start voice recognition',
+                message: error.message || 'Failed to start voice recognition',
             });
             setTimeout(() => setVoiceState('idle'), 2000);
         }
@@ -266,7 +244,7 @@ export default function VoiceCommandScreen() {
     // Stop voice recognition
     const stopListening = async () => {
         try {
-            await Voice.stop();
+            ExpoSpeechRecognitionModule.stop();
             console.log('🎤 Voice recognition stopped');
         } catch (error) {
             console.error('🎤 Failed to stop voice:', error);

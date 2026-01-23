@@ -14,8 +14,11 @@ import LogsScreen from "../screens/LogsScreen";
 import EnergyDashboardScreen from "../screens/EnergyDashboardScreen";
 import CreateSceneScreen from "../screens/CreateSceneScreen";
 import EditSceneScreen from "../screens/EditSceneScreen";
-import VoiceCommandScreen from "../screens/VoiceCommandScreen";
+// Temporarily disabled - expo-speech-recognition module not ready
+// import VoiceCommandScreen from "../screens/VoiceCommandScreen";
 import NFCSettingsScreen from "../screens/NFCSettingsScreen";
+import AddDeviceScreen from "../screens/AddDeviceScreen";
+import ProvisionDeviceScreen from "../screens/ProvisionDeviceScreen";
 import { useTheme } from "../context/ThemeContext";
 
 const Tab = createBottomTabNavigator();
@@ -30,7 +33,8 @@ function HomeStackScreen() {
     return (
         <HomeStack.Navigator screenOptions={{ headerShown: false }}>
             <HomeStack.Screen name="HomeMain" component={HomeScreen} />
-            <HomeStack.Screen name="VoiceCommand" component={VoiceCommandScreen} />
+            {/* Temporarily disabled - expo-speech-recognition module not ready */}
+            {/* <HomeStack.Screen name="VoiceCommand" component={VoiceCommandScreen} /> */}
         </HomeStack.Navigator>
     );
 }
@@ -47,6 +51,14 @@ function DashboardStackScreen() {
             <DashboardStack.Screen
                 name="RemoveDevices"
                 component={RemoveDevicesScreen}
+            />
+            <DashboardStack.Screen
+                name="AddDevice"
+                component={AddDeviceScreen}
+            />
+            <DashboardStack.Screen
+                name="ProvisionDevice"
+                component={ProvisionDeviceScreen}
             />
         </DashboardStack.Navigator>
     );

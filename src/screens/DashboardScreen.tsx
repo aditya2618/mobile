@@ -1,13 +1,13 @@
 import { View, ScrollView, StyleSheet, RefreshControl, StatusBar, TouchableOpacity, Animated } from "react-native";
 import { Text, IconButton, FAB, Button } from "react-native-paper";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useDeviceStore } from "../store/deviceStore";
 import { useHomeStore } from "../store/homeStore";
 import { useAuthStore } from "../store/authStore";
 import { useTheme } from "../context/ThemeContext";
 import EntityRenderer from "../renderer/EntityRenderer";
 import Collapsible from "../components/Collapsible";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 
 export default function DashboardScreen() {
     const navigation = useNavigation();
@@ -19,6 +19,14 @@ export default function DashboardScreen() {
     const { theme, mode } = useTheme();
     const [refreshing, setRefreshing] = useState(false);
     const [expandedDevices, setExpandedDevices] = useState<Set<number>>(new Set());
+
+    useFocusEffect(
+        useCallback(() => {
+            if (selectedHome) {
+                loadDevices(selectedHome.id);
+            }
+        }, [selectedHome, loadDevices])
+    );
 
     const onRefresh = async () => {
         if (selectedHome) {
@@ -76,7 +84,7 @@ export default function DashboardScreen() {
                             <Button
                                 mode="contained"
                                 icon="plus"
-                                onPress={() => navigation.navigate('ManageDevices' as never)}
+                                onPress={() => navigation.navigate('AddDevice' as never)}
                                 style={{ backgroundColor: theme.primary }}
                                 labelStyle={{ color: '#FFFFFF' }}
                             >

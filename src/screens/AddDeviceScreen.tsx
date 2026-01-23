@@ -46,7 +46,31 @@ export default function AddDeviceScreen({ navigation }: any) {
                     <Card.Content>
                         <View style={styles.section}>
                             <Text variant="titleMedium" style={[styles.sectionTitle, { color: theme.text }]}>
-                                Option 1: Scan QR Code
+                                Option 1: WiFi Provisioning (Recommended)
+                            </Text>
+                            <Text variant="bodySmall" style={[styles.description, { color: theme.textSecondary }]}>
+                                Easy setup wizard for new ESP32 devices
+                            </Text>
+                            <Button
+                                mode="contained"
+                                icon="wifi-settings"
+                                onPress={() => navigation.navigate('ProvisionDevice')}
+                                style={styles.button}
+                                buttonColor={theme.primary}
+                            >
+                                Start WiFi Setup
+                            </Button>
+                        </View>
+
+                        <View style={styles.divider}>
+                            <View style={[styles.line, { backgroundColor: theme.border }]} />
+                            <Text style={[styles.dividerText, { color: theme.textSecondary }]}>OR</Text>
+                            <View style={[styles.line, { backgroundColor: theme.border }]} />
+                        </View>
+
+                        <View style={styles.section}>
+                            <Text variant="titleMedium" style={[styles.sectionTitle, { color: theme.text }]}>
+                                Option 2: Scan QR Code
                             </Text>
                             <Button
                                 mode="contained"
@@ -67,7 +91,7 @@ export default function AddDeviceScreen({ navigation }: any) {
 
                         <View style={styles.section}>
                             <Text variant="titleMedium" style={[styles.sectionTitle, { color: theme.text }]}>
-                                Option 2: Manual Entry
+                                Option 3: Manual Entry
                             </Text>
                             <TextInput
                                 label="Device IP Address"
@@ -134,6 +158,9 @@ const styles = StyleSheet.create({
     sectionTitle: {
         marginBottom: 12,
         fontWeight: "600",
+    },
+    description: {
+        marginBottom: 8,
     },
     input: {
         marginBottom: 12,
